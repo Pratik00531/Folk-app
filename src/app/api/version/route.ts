@@ -1,0 +1,25 @@
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  return NextResponse.json(
+    {
+      version: '1.2.0',
+      buildNumber: 120,
+      releaseDate: 'October 2026',
+      releaseNotes: [
+        'Śrīmad Bhāgavatam hearing tracker added to analytics comparison',
+        'Level 5 full 10 Cantos with high-res Prabhupada covers',
+        'Duolingo-style animated streak counter & celebratory confetti',
+        'Dark mode high-contrast color scheme refinement',
+        'Supabase cloud synchronization for Guides & Devotees',
+        'Instant in-app one-tap version updating system',
+      ],
+      mandatory: false,
+    },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    }
+  );
+}

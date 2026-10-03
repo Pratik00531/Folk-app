@@ -1,0 +1,25 @@
+{
+  "name": "FOLK SĀDHANA",
+  "short_name": "FOLK Sādhana",
+  "description": "Daily Sādhana Reporting, Chanting Streak & Prabhupada Reading for Friends of Lord Krishna",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F8F6F0",
+  "theme_color": "#E07A2B",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "spirituality", "productivity"],
+  "icons": [
+    {
+      "src": "/assets/images/folk_logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
