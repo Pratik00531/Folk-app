@@ -46,6 +46,7 @@ import {
   apiUpdateReadingProgress,
   apiSubscribeToSadhanaChanges,
   apiSubscribeToApprovalChanges,
+  apiGetGuideDevotees,
 } from '@/lib/supabaseService';
 
 export type ScreenType = 'splash' | 'welcome' | 'login' | 'signup' | 'home';
@@ -162,9 +163,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
+    // Initial session load
     apiGetSession().then(({ data }) => {
       if (data?.session?.user) {
-        apiGetProfile(data.session.user.id).then(({ data: profile }) => {
+        const uid = data.session.user.id;
+        apiGetProfile(uid).then(({ data: profile }) => {
           if (profile) {
             setCurrentUser({
               id: profile.id,
@@ -185,17 +188,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
         });
 
-        apiGetSadhanaRecords(data.session.user.id).then(({ data: records }) => {
+        apiGetSadhanaRecords(uid).then(({ data: records }) => {
           if (records && records.length > 0) {
             const mapped: Record<string, SadhanaRecord> = {};
             records.forEach((r: any) => {
               mapped[r.record_date] = r;
             });
-            setSadhanaRecords((prev) => ({ ...prev, ...mapped }));
+            setSadhanaRecords(mapped);
+          } else {
+            setSadhanaRecords({});
           }
         });
 
-        apiGetStreak(data.session.user.id).then(({ data: s }) => {
+        apiGetStreak(uid).then(({ data: s }) => {
           if (s) {
             setStreak((prev) => ({
               ...prev,
@@ -207,7 +212,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
         });
 
-        apiGetReadingProgress(data.session.user.id).then(({ data: p }) => {
+        apiGetReadingProgress(uid).then(({ data: p }) => {
           if (p) {
             setReadingState((prev) => ({
               ...prev,
@@ -221,6 +226,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    // Always fetch live Guide roster and approvals from Supabase
+    apiGetGuideDevotees().then(({ data: devs }) => {
+      if (devs && devs.length > 0) {
+        setGuideDevotees(devs);
+      }
+    });
+
+    apiGetApprovalRequests().then(({ data: reqs }) => {
+      if (reqs && reqs.length > 0) {
+        setApprovalRequests(reqs);
+      }
+    });
+
     // Realtime subscriptions
     const sadhanaSub = apiSubscribeToSadhanaChanges((payload) => {
       if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
@@ -231,6 +249,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             [newRecord.record_date]: newRecord,
           }));
         }
+        // Update Guide roster in real time as boys submit their Sādhana
+        apiGetGuideDevotees().then(({ data: devs }) => {
+          if (devs && devs.length > 0) {
+            setGuideDevotees(devs);
+          }
+        });
       }
     });
 
@@ -256,7 +280,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     const { data, error } = await apiSignIn(email, pass);
     if (!error && data?.user) {
-      const { data: profile } = await apiGetProfile(data.user.id);
+      const uid = data.user.id;
+      const { data: profile } = await apiGetProfile(uid);
       if (profile) {
         setCurrentUser({
           id: profile.id,
@@ -275,6 +300,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           updated_at: profile.updated_at,
         });
       }
+
+      // Fetch user's sadhana records
+      apiGetSadhanaRecords(uid).then(({ data: records }) => {
+        if (records && records.length > 0) {
+          const mapped: Record<string, SadhanaRecord> = {};
+          records.forEach((r: any) => {
+            mapped[r.record_date] = r;
+          });
+          setSadhanaRecords(mapped);
+        } else {
+          setSadhanaRecords({});
+        }
+      });
+
+      // Fetch user's streak
+      apiGetStreak(uid).then(({ data: s }) => {
+        if (s) {
+          setStreak((prev) => ({
+            ...prev,
+            current_reporting_streak: s.current_reporting_streak || 0,
+            longest_reporting_streak: s.longest_reporting_streak || 0,
+            last_reported_date: s.last_reported_date,
+            next_milestone: s.next_milestone || 3,
+          }));
+        }
+      });
+
+      // Fetch guide roster and approvals
+      apiGetGuideDevotees().then(({ data: devs }) => {
+        if (devs && devs.length > 0) setGuideDevotees(devs);
+      });
+      apiGetApprovalRequests().then(({ data: reqs }) => {
+        if (reqs && reqs.length > 0) setApprovalRequests(reqs);
+      });
+
+      setScreen('home');
     }
     return { error };
   };
@@ -295,6 +356,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await apiSignOut();
+    setSadhanaRecords({});
+    setStreak(initialStreak);
+    setGuideDevotees([]);
+    setApprovalRequests([]);
     setScreen('login');
   };
 

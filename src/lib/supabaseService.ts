@@ -320,7 +320,7 @@ export function apiSubscribeToApprovalChanges(onUpdate: (payload: any) => void) 
         onUpdate(payload);
       }
     )
-    .subscribe();
+  .subscribe();
 
   return {
     unsubscribe: () => {
@@ -328,3 +328,101 @@ export function apiSubscribeToApprovalChanges(onUpdate: (payload: any) => void) 
     },
   };
 }
+
+// ==============================================================================
+// 8. GUIDE DEVOTEES ROSTER
+// ==============================================================================
+
+export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }> {
+  if (!isSupabaseConfigured) return { data: [], error: null };
+
+  try {
+    const { data: profiles, error: pError } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('role', ['folk_boy', 'folk_lead'])
+      .order('created_at', { ascending: false });
+
+    if (pError || !profiles) {
+      return { data: [], error: pError };
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const devotees = await Promise.all(
+      profiles.map(async (p: any) => {
+        const { data: streakData } = await supabase
+          .from('streaks')
+          .select('*')
+          .eq('user_id', p.id)
+          .single();
+
+        const { data: latestRecord } = await supabase
+          .from('sadhana_records')
+          .select('*')
+          .eq('user_id', p.id)
+          .order('record_date', { ascending: false })
+          .limit(1)
+          .single();
+
+        const { data: readingData } = await supabase
+          .from('reading_progress')
+          .select('*')
+          .eq('user_id', p.id)
+          .single();
+
+        const isToday = latestRecord?.record_date === todayStr;
+        const submitted = Boolean(isToday && latestRecord?.points_earned > 0);
+
+        return {
+          id: p.id,
+          name: p.spiritual_name ? `${p.full_name} (${p.spiritual_name})` : p.full_name,
+          folk_id: p.folk_id || 'FOLK-XXXX',
+          role: p.role,
+          avatar_url: p.avatar_url || '/assets/images/Chanting.png',
+          streak: streakData?.current_reporting_streak || 0,
+          points_today: isToday ? latestRecord?.points_earned || 0 : 0,
+          submitted,
+          last_sadhana_label: isToday
+            ? "Today's Sādhana"
+            : latestRecord
+            ? `Previous: ${latestRecord.record_date}`
+            : 'No submissions yet',
+          last_points: latestRecord?.points_earned || 0,
+          pillars: {
+            mangala: Boolean(latestRecord?.mangala_arati_time),
+            japa: Boolean(latestRecord?.japa_rounds && latestRecord.japa_rounds >= 16),
+            darshan: Boolean(latestRecord?.darshan_arati_time),
+            bhagavatam: Boolean(latestRecord?.srimad_bhagavatam_time),
+            jf: Boolean(latestRecord?.japa_finish_slot_time),
+            reading: Boolean(latestRecord?.book_reading_minutes && latestRecord.book_reading_minutes > 0),
+          },
+          pillar_dots: {
+            mangala: latestRecord?.mangala_arati_time ? 'green' : 'red',
+            japa: (latestRecord?.japa_rounds || 0) >= 16 ? 'green' : (latestRecord?.japa_rounds || 0) > 0 ? 'yellow' : 'red',
+            darshan: latestRecord?.darshan_arati_time ? 'green' : 'grey',
+            bhagavatam: latestRecord?.srimad_bhagavatam_time ? 'green' : 'red',
+            jf: latestRecord?.japa_finish_slot_time ? 'green' : 'red',
+            reading: (latestRecord?.book_reading_minutes || 0) >= 20 ? 'green' : (latestRecord?.book_reading_minutes || 0) > 0 ? 'yellow' : 'red',
+          },
+          japa_rounds: latestRecord?.japa_rounds || 0,
+          japa_arrival: latestRecord?.japa_start_time || null,
+          japa_leaving: latestRecord?.japa_finish_time || null,
+          mangala_time: latestRecord?.mangala_arati_time || null,
+          bhagavatam_time: latestRecord?.srimad_bhagavatam_time || null,
+          jf_time: latestRecord?.japa_finish_slot_time || null,
+          reading_mins: latestRecord?.book_reading_minutes || 0,
+          current_book: readingData?.current_book_title || latestRecord?.book_title || 'Bhagavad Gita As It Is',
+          current_book_level: readingData?.current_book_level || latestRecord?.book_level || 1,
+          total_reading_hours: Number(((readingData?.total_reading_minutes || 0) / 60).toFixed(1)),
+          last_submitted_date: latestRecord ? latestRecord.record_date : 'Never',
+        };
+      })
+    );
+
+    return { data: devotees, error: null };
+  } catch (err) {
+    return { data: [], error: err };
+  }
+}
+

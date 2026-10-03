@@ -112,7 +112,7 @@ export interface UserReadingState {
   started_at: string;
   total_minutes_read: number;
   sessions_count: number;
-  last_reading_date: string;
+  last_reading_date?: string | null;
   completed_books: {
     book_id: string;
     title: string;
@@ -146,17 +146,44 @@ export interface PointRuleConfig {
   effective_date: string;
 }
 
-export interface SadhanaApprovalRequest {
+export interface GuideDevoteeOverview {
   id: string;
-  user_id: string;
-  user_name: string;
+  name: string;
   folk_id: string;
-  record_date: string;
-  data: Partial<SadhanaRecord>;
-  status: 'pending' | 'approved' | 'rejected';
-  reason?: string;
-  requested_at: string;
-  reviewed_by?: string;
-  reviewed_at?: string;
+  role: 'folk_boy' | 'folk_lead';
+  avatar_url?: string;
+  streak: number;
+  points_today: number;
+  submitted: boolean;
+  last_sadhana_label: string;
+  last_points: number;
+  pillars: {
+    mangala: boolean;
+    japa: boolean;
+    darshan: boolean;
+    bhagavatam: boolean;
+    jf: boolean;
+    reading: boolean;
+  };
+  pillar_dots: {
+    mangala: PillarDotStatus;
+    japa: PillarDotStatus;
+    darshan: PillarDotStatus;
+    bhagavatam: PillarDotStatus;
+    jf: PillarDotStatus;
+    reading: PillarDotStatus;
+  };
+  japa_rounds: number;
+  japa_arrival: string | null;
+  japa_leaving: string | null;
+  mangala_time: string | null;
+  bhagavatam_time: string | null;
+  jf_time: string | null;
+  reading_mins: number;
+  current_book: string;
+  current_book_level: number;
+  total_reading_hours: number;
+  last_submitted_date: string;
 }
+
 
