@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Phone, Lock, ArrowRight, Shield, User, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Phone, Lock, ArrowRight, Shield, User, AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 
 export default function LoginView() {
   const { setScreen, switchRole, signIn, isLiveBackend } = useApp();
   const [selectedRoleType, setSelectedRoleType] = useState<'boy' | 'guide'>('boy');
-  const [phone, setPhone] = useState('9876543210');
-  const [password, setPassword] = useState('harekrishna108');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ phone?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -17,12 +17,8 @@ export default function LoginView() {
     setSelectedRoleType(roleType);
     if (roleType === 'boy') {
       switchRole('folk_boy');
-      setPhone('9876543210');
-      setPassword('harekrishna108');
     } else {
       switchRole('folk_guide');
-      setPhone('9900088776');
-      setPassword('amoghguide108');
     }
     setErrors({});
   };
@@ -30,12 +26,18 @@ export default function LoginView() {
   const validate = () => {
     const newErrors: { phone?: string; password?: string } = {};
 
-    // 10-digit validation rule
-    const cleanedPhone = phone.replace(/\D/g, '');
-    if (!cleanedPhone) {
-      newErrors.phone = 'Mobile number is required';
-    } else if (cleanedPhone.length !== 10) {
-      newErrors.phone = `Phone number must be exactly 10 digits (currently ${cleanedPhone.length} digits)`;
+    const trimmed = phone.trim();
+    if (!trimmed) {
+      newErrors.phone = 'Mobile number or Email is required';
+    } else if (trimmed.includes('@')) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        newErrors.phone = 'Please enter a valid email address';
+      }
+    } else {
+      const cleanedPhone = trimmed.replace(/\D/g, '');
+      if (cleanedPhone.length !== 10) {
+        newErrors.phone = `Phone number must be exactly 10 digits (currently ${cleanedPhone.length} digits)`;
+      }
     }
 
     // Password validation rule
@@ -58,11 +60,15 @@ export default function LoginView() {
     if (isLiveBackend) {
       setLoading(true);
       setAuthError(null);
-      const loginIdentifier = phone.includes('@') ? phone : `${phone}@folk.org`;
+      const trimmed = phone.trim();
+      const loginIdentifier = trimmed.includes('@')
+        ? trimmed.toLowerCase()
+        : `${trimmed.replace(/\D/g, '')}@folk.org`;
+
       const { error } = await signIn(loginIdentifier, password);
       setLoading(false);
       if (error) {
-        setAuthError(error.message || 'Invalid credentials. Please verify your phone and password.');
+        setAuthError(error.message || 'Invalid credentials. Please verify your email/phone and password.');
         return;
       }
     }
@@ -71,10 +77,8 @@ export default function LoginView() {
   };
 
   const handlePhoneChange = (val: string) => {
-    // Only allow digits and cap at 10
-    const digitsOnly = val.replace(/\D/g, '').slice(0, 10);
-    setPhone(digitsOnly);
-    if (errors.phone && digitsOnly.length === 10) {
+    setPhone(val);
+    if (errors.phone) {
       setErrors((prev) => ({ ...prev, phone: undefined }));
     }
   };
@@ -154,42 +158,50 @@ export default function LoginView() {
           </div>
         )}
 
-        {/* Input: 10-Digit Mobile Number */}
+        {/* Input: Mobile Number or Email */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between ml-1">
             <label className="text-xs font-bold text-[#59534E]">
-              10-Digit Mobile Number
+              Email or Mobile Number
             </label>
             <span
               className={`text-[10px] font-bold ${
-                phone.length === 10 ? 'text-emerald-700' : 'text-[#8E867F]'
+                phone.includes('@')
+                  ? phone.length > 5 ? 'text-emerald-700' : 'text-[#8E867F]'
+                  : phone.length === 10 ? 'text-emerald-700' : 'text-[#8E867F]'
               }`}
             >
-              {phone.length}/10 digits
+              {phone.includes('@') ? 'Email' : `${phone.length}/10 digits`}
             </span>
           </div>
 
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
-              <Phone className="w-4 h-4" />
-              <span className="text-xs font-bold text-[#786E65] ml-1.5 border-r border-stone-200 pr-2">
-                +91
-              </span>
+              {phone.includes('@') ? (
+                <Mail className="w-4 h-4 text-[#E07A2B]" />
+              ) : (
+                <>
+                  <Phone className="w-4 h-4" />
+                  <span className="text-xs font-bold text-[#786E65] ml-1.5 border-r border-stone-200 pr-2">
+                    +91
+                  </span>
+                </>
+              )}
             </div>
             <input
-              type="tel"
-              inputMode="numeric"
-              maxLength={10}
+              type={phone.includes('@') ? 'email' : 'text'}
               value={phone}
               onChange={(e) => handlePhoneChange(e.target.value)}
-              placeholder="Enter 10 digit mobile"
-              className={`w-full h-12 pl-18 pr-10 rounded-2xl bg-white/90 border text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs transition-all font-mono tracking-wider ${
+              placeholder="Enter mobile or email"
+              className={`w-full h-12 pr-10 rounded-2xl bg-white/90 border text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs transition-all ${
+                phone.includes('@') ? 'pl-10 font-sans' : 'pl-18 font-mono tracking-wider'
+              } ${
                 errors.phone
                   ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200'
                   : 'border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15'
               }`}
             />
-            {phone.length === 10 && (
+            {((phone.includes('@') && phone.length > 5) || (!phone.includes('@') && phone.length === 10)) && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-emerald-600">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
