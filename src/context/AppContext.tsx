@@ -27,7 +27,7 @@ import {
   folkBookCatalogue,
 } from '@/lib/mockData';
 
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getIndianTodayStr } from '@/lib/dateUtils';
 import {
   apiSignUp,
@@ -48,7 +48,10 @@ import {
   apiSubscribeToSadhanaChanges,
   apiSubscribeToApprovalChanges,
   apiGetGuideDevotees,
+  apiSendRemindersToDevotees,
+  apiGetLatestReminderForDevotee,
 } from '@/lib/supabaseService';
+import { sendDeviceNotification } from '@/lib/notificationService';
 
 export type ScreenType = 'splash' | 'welcome' | 'login' | 'signup' | 'home';
 
@@ -145,6 +148,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
 
+  const currentUserRef = React.useRef(currentUser);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
   useEffect(() => {
     if (typeof document !== 'undefined') {
       if (theme === 'dark') {
@@ -229,6 +237,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             }));
           }
         });
+        // Check for active reminders sent to this devotee today
+        apiGetLatestReminderForDevotee(uid).then((latest) => {
+          if (latest) {
+            const sentTime = new Date(latest.sent_at).getTime();
+            if (Date.now() - sentTime < 16 * 60 * 60 * 1000) {
+              setReminder({
+                id: latest.id,
+                sender_id: latest.sender_id,
+                sender_name: latest.sender_name || 'FOLK Guide',
+                sender_role: latest.sender_role || 'folk_guide',
+                recipient_id: latest.recipient_id,
+                recipient_name: currentUserRef.current?.full_name || 'Devotee',
+                message: latest.message,
+                deep_link: latest.deep_link || '/sadhana/today',
+                sent_at: 'Earlier today',
+                is_read: false,
+              });
+
+              const notifiedKey = `notified_rem_${latest.id}`;
+              if (typeof window !== 'undefined' && !localStorage.getItem(notifiedKey)) {
+                localStorage.setItem(notifiedKey, 'true');
+                sendDeviceNotification({
+                  title: `🔔 Sādhana Reminder from ${latest.sender_name || 'FOLK Guide'}`,
+                  body: latest.message || 'Please submit your daily Sādhana report.',
+                  deepLink: latest.deep_link || '/sadhana/today',
+                });
+              }
+            }
+          }
+        });
       }
     });
 
@@ -274,9 +312,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    // Realtime subscription for incoming reminder_logs
+    let reminderChannel: any = null;
+    if (isSupabaseConfigured) {
+      reminderChannel = supabase
+        .channel('public:reminder_logs')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'reminder_logs',
+          },
+          (payload) => {
+            const newReminder = payload.new as any;
+            if (newReminder) {
+              const currentUserId = currentUserRef.current?.id;
+              if (currentUserId && newReminder.recipient_id === currentUserId) {
+                setReminder({
+                  id: newReminder.id,
+                  sender_id: newReminder.sender_id,
+                  sender_name: newReminder.sender_name || 'FOLK Guide',
+                  sender_role: newReminder.sender_role || 'folk_guide',
+                  recipient_id: newReminder.recipient_id,
+                  recipient_name: currentUserRef.current?.full_name || 'Devotee',
+                  message: newReminder.message || 'Your FOLK Guide is requesting you to submit today’s Sādhana.',
+                  deep_link: newReminder.deep_link || '/sadhana/today',
+                  sent_at: 'Just now',
+                  is_read: false,
+                });
+
+                sendDeviceNotification({
+                  title: `🔔 Sādhana Reminder from ${newReminder.sender_name || 'FOLK Guide'}`,
+                  body: newReminder.message || 'Please submit your daily Sādhana report.',
+                  deepLink: newReminder.deep_link || '/sadhana/today',
+                });
+              }
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       sadhanaSub.unsubscribe();
       approvalSub.unsubscribe();
+      if (reminderChannel) {
+        supabase.removeChannel(reminderChannel);
+      }
     };
   }, []);
 
@@ -777,8 +860,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const sendRemindersToPending = () => {
     const pending = guideDevotees.filter((d) => !d.submitted);
     const names = pending.map((d) => d.name);
-    // If the currently logged in user is pending, set their reminder notification
-    if (pending.some((d) => d.folk_id === currentUser.folk_id)) {
+    const recipientIds = pending.map((d) => d.id).filter(Boolean) as string[];
+
+    // Send to Supabase reminder_logs so all devotees receive push & realtime notifications
+    if (recipientIds.length > 0) {
+      apiSendRemindersToDevotees({
+        senderId: currentUser.id,
+        senderName: currentUser.full_name || 'FOLK Guide',
+        senderRole: 'folk_guide',
+        recipientIds,
+        message: 'Hare Krishna! Your FOLK Guide is reminding you to complete and submit today’s Sādhana.',
+      }).catch((err) => console.warn('Failed to send reminders to Supabase:', err));
+    }
+
+    // If the currently logged in user is pending, set their reminder notification and trigger device alert
+    if (pending.some((d) => d.folk_id === currentUser.folk_id || d.id === currentUser.id)) {
       setReminder({
         id: `rem-${Date.now()}`,
         sender_id: currentUser.id,
@@ -790,6 +886,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         deep_link: '/sadhana/today',
         sent_at: 'Just now',
         is_read: false,
+      });
+
+      sendDeviceNotification({
+        title: `🔔 Sādhana Reminder`,
+        body: 'Hare Krishna! Please submit today’s Sādhana chart.',
+        deepLink: '/sadhana/today',
       });
     }
     return { count: pending.length, names };

@@ -15,6 +15,7 @@ import PointsBreakdownModal from '@/components/PointsBreakdownModal';
 import DuolingoStreakCelebrationModal from '@/components/DuolingoStreakCelebrationModal';
 import ProfileModal from '@/components/ProfileModal';
 import AppUpdateModal from '@/components/AppUpdateModal';
+import NotificationPermissionModal from '@/components/NotificationPermissionModal';
 
 function MainContent() {
   const {
@@ -173,6 +174,9 @@ function MainContent() {
 
       {/* IN-APP VERSION AUTO-UPDATE NOTICE & CACHE PURGER */}
       <AppUpdateModal />
+
+      {/* SYSTEM NOTIFICATION PERMISSION PROMPT ON OPENING */}
+      <NotificationPermissionModal />
     </main>
   );
 }

@@ -335,6 +335,24 @@ create policy "Users can insert own reading progress"
   on public.reading_progress for insert
   with check (auth.uid() = user_id);
 
+-- REMINDER LOGS POLICIES
+create policy "Reminder logs select policy"
+  on public.reminder_logs for select
+  using (
+    auth.uid() = recipient_id
+    or auth.uid() = sender_id
+    or public.current_user_role() in ('folk_guide', 'folk_lead')
+    or auth.role() = 'anon'
+  );
+
+create policy "Reminder logs insert policy"
+  on public.reminder_logs for insert
+  with check (
+    public.current_user_role() in ('folk_guide', 'folk_lead')
+    or auth.uid() = sender_id
+    or auth.role() = 'anon'
+  );
+
 -- Sequence for auto-generating human-readable FOLK-IDs: FOLK-2026-XXXX
 create sequence if not exists public.folk_id_seq start 1001;
 

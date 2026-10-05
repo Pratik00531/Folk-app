@@ -17,10 +17,11 @@ import {
   KeyRound,
   Lock,
 } from 'lucide-react';
-import { apiGuideResetDevoteePassword } from '@/lib/supabaseService';
+import { apiGuideResetDevoteePassword, apiSendRemindersToDevotees } from '@/lib/supabaseService';
+import { sendDeviceNotification } from '@/lib/notificationService';
 
 export default function GuideMemberDetailModal() {
-  const { selectedDevoteeForDetail, setSelectedDevoteeForDetail, toggleLeadRole } = useApp();
+  const { currentUser, selectedDevoteeForDetail, setSelectedDevoteeForDetail, toggleLeadRole } = useApp();
   const [reminderSent, setReminderSent] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [newTempPassword, setNewTempPassword] = useState('HareKrishna@108');
@@ -33,9 +34,26 @@ export default function GuideMemberDetailModal() {
   const devotee = selectedDevoteeForDetail;
   const isLead = devotee.role === 'folk_lead';
 
-  const handleSendReminder = () => {
+  const handleSendReminder = async () => {
     setReminderSent(true);
-    setTimeout(() => setReminderSent(false), 3000);
+    if (devotee.id) {
+      await apiSendRemindersToDevotees({
+        senderId: currentUser.id,
+        senderName: currentUser.full_name || 'FOLK Guide',
+        senderRole: 'folk_guide',
+        recipientIds: [devotee.id],
+        message: `Hare Krishna ${devotee.name.split(' ')[0]}! Your FOLK Guide has sent you a reminder to complete today's Sādhana.`,
+      });
+
+      if (devotee.id === currentUser.id || devotee.folk_id === currentUser.folk_id) {
+        sendDeviceNotification({
+          title: `🔔 Sādhana Reminder`,
+          body: `Hare Krishna! Your FOLK Guide has sent you a reminder to complete today's Sādhana.`,
+          deepLink: '/sadhana/today',
+        });
+      }
+    }
+    setTimeout(() => setReminderSent(false), 3500);
   };
 
   return (

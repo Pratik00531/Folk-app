@@ -783,4 +783,69 @@ export async function apiCheckAccountExists(identifier: string): Promise<boolean
   return false;
 }
 
+// ==============================================================================
+// 12. REMINDERS & NOTIFICATION DISPATCH
+// ==============================================================================
+
+export async function apiSendRemindersToDevotees({
+  senderId,
+  senderName,
+  senderRole,
+  recipientIds,
+  message,
+}: {
+  senderId?: string;
+  senderName?: string;
+  senderRole?: string;
+  recipientIds: string[];
+  message?: string;
+}): Promise<{ count: number; error: any }> {
+  if (!isSupabaseConfigured || recipientIds.length === 0) {
+    return { count: recipientIds.length, error: null };
+  }
+
+  try {
+    const reminderRows = recipientIds.map((recId) => ({
+      sender_id: senderId || null,
+      recipient_id: recId,
+      sender_role: senderRole || 'folk_guide',
+      sender_name: senderName || 'FOLK Guide',
+      message: message || 'Your FOLK Guide is requesting you to submit today’s Sādhana.',
+      deep_link: '/sadhana/today',
+      sent_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabase.from('reminder_logs').insert(reminderRows);
+    if (error) {
+      console.warn('apiSendRemindersToDevotees error:', error);
+      return { count: 0, error };
+    }
+
+    return { count: recipientIds.length, error: null };
+  } catch (err) {
+    console.error('apiSendRemindersToDevotees exception:', err);
+    return { count: 0, error: err };
+  }
+}
+
+export async function apiGetLatestReminderForDevotee(userId: string): Promise<any | null> {
+  if (!isSupabaseConfigured || !userId) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('reminder_logs')
+      .select('*')
+      .eq('recipient_id', userId)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) return null;
+    return data;
+  } catch (err) {
+    return null;
+  }
+}
+
+
 
