@@ -169,6 +169,50 @@ export async function apiGetProfile(userId: string) {
         }
       } catch {}
     }
+
+    // Merge custom metadata (chanting_commitment, college_or_profession, guide_name, etc.) from auth session
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user && authData.user.id === userId && authData.user.user_metadata) {
+        const meta = authData.user.user_metadata;
+        if (data.chanting_commitment === undefined && meta.chanting_commitment !== undefined) {
+          data.chanting_commitment = meta.chanting_commitment;
+        }
+        if (!data.college_or_profession && meta.college_or_profession) {
+          data.college_or_profession = meta.college_or_profession;
+        }
+        if (!data.guide_name && meta.guide_name) {
+          data.guide_name = meta.guide_name;
+        }
+        if (!data.avatar_url && meta.avatar_url) {
+          data.avatar_url = meta.avatar_url;
+        }
+      }
+    } catch {}
+
+    // Fallback merge from localStorage for maximum resilience across restarts
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('folk_user_profile');
+        if (raw) {
+          const local = JSON.parse(raw);
+          if (local && (local.id === userId || local.email === data.email)) {
+            if (data.chanting_commitment === undefined && local.chanting_commitment !== undefined) {
+              data.chanting_commitment = local.chanting_commitment;
+            }
+            if (!data.college_or_profession && local.college_or_profession) {
+              data.college_or_profession = local.college_or_profession;
+            }
+            if (!data.guide_name && local.guide_name) {
+              data.guide_name = local.guide_name;
+            }
+            if (!data.avatar_url && local.avatar_url) {
+              data.avatar_url = local.avatar_url;
+            }
+          }
+        }
+      } catch {}
+    }
   }
 
   return { data, error };
@@ -177,43 +221,86 @@ export async function apiGetProfile(userId: string) {
 export async function apiUpdateProfile(userId: string, updates: Partial<UserProfile>) {
   if (!isSupabaseConfigured) return { data: null, error: null };
 
-  const payload: any = {
-    full_name: updates.full_name,
-    phone: updates.phone,
-    email: updates.email,
-    avatar_url: updates.avatar_url,
-    chanting_commitment: updates.chanting_commitment,
-    college_or_profession: updates.college_or_profession,
+  // 1. Identify target Supabase auth user id
+  let targetId = userId;
+  try {
+    const { data: authData } = await supabase.auth.getUser();
+    if (authData?.user?.id) {
+      targetId = authData.user.id;
+    }
+  } catch {}
+
+  // 2. Build payload containing only columns that exist in public.profiles table
+  // Columns: id, folk_id, full_name, email, phone, role, guide_id, lead_id, avatar_url, updated_at
+  const dbPayload: Record<string, any> = {
     updated_at: new Date().toISOString(),
   };
 
-  if ((updates as any).guide_id) {
-    payload.guide_id = (updates as any).guide_id;
-  }
-  if (updates.guide_name) {
-    payload.guide_name = updates.guide_name;
+  if (updates.full_name !== undefined) dbPayload.full_name = updates.full_name.trim();
+  if (updates.phone !== undefined) dbPayload.phone = updates.phone.trim();
+  if (updates.email !== undefined && updates.email) dbPayload.email = updates.email.trim();
+  if (updates.avatar_url !== undefined) dbPayload.avatar_url = updates.avatar_url;
+  if ('guide_id' in updates) {
+    dbPayload.guide_id = updates.guide_id ? updates.guide_id : null;
   }
 
-  try {
-    const res = await supabase
+  let dbResult: any = null;
+  let dbError: any = null;
+
+  if (targetId) {
+    const { data, error } = await supabase
       .from('profiles')
-      .update(payload)
-      .eq('id', userId)
+      .update(dbPayload)
+      .eq('id', targetId)
       .select()
       .single();
-    if (!res.error) return res;
-  } catch {}
 
-  // Fallback in case guide_name column was not added to profiles schema
-  delete payload.guide_name;
-  const resFallback = await supabase
-    .from('profiles')
-    .update(payload)
-    .eq('id', userId)
-    .select()
-    .single();
+    dbResult = data;
+    dbError = error;
+  }
 
-  return resFallback;
+  // 3. Update auth user metadata (stores chanting_commitment, college_or_profession, guide_name, etc.)
+  try {
+    const metaUpdates: Record<string, any> = {};
+    if (updates.full_name !== undefined) metaUpdates.full_name = updates.full_name.trim();
+    if (updates.phone !== undefined) metaUpdates.phone = updates.phone.trim();
+    if (updates.avatar_url !== undefined) metaUpdates.avatar_url = updates.avatar_url;
+    if (updates.chanting_commitment !== undefined) metaUpdates.chanting_commitment = Number(updates.chanting_commitment);
+    if (updates.college_or_profession !== undefined) metaUpdates.college_or_profession = updates.college_or_profession.trim();
+    if (updates.guide_name !== undefined) metaUpdates.guide_name = updates.guide_name;
+    if ('guide_id' in updates) metaUpdates.guide_id = updates.guide_id ? updates.guide_id : null;
+
+    if (Object.keys(metaUpdates).length > 0) {
+      await supabase.auth.updateUser({ data: metaUpdates });
+    }
+  } catch (authErr) {
+    console.warn('apiUpdateProfile auth metadata update notice:', authErr);
+  }
+
+  // 4. Update localStorage for offline/reload persistence & phone login mapping
+  if (typeof window !== 'undefined') {
+    try {
+      const existing = localStorage.getItem('folk_user_profile');
+      const base = existing ? JSON.parse(existing) : {};
+      const merged = {
+        ...base,
+        ...updates,
+        ...(dbResult || {}),
+        updated_at: new Date().toISOString(),
+      };
+      localStorage.setItem('folk_user_profile', JSON.stringify(merged));
+
+      if (updates.phone) {
+        const clean = updates.phone.replace(/\D/g, '');
+        if (clean.length === 10 && merged.email) {
+          localStorage.setItem(`folk_phone_map_${clean}`, merged.email);
+          localStorage.setItem(`folk_phone_map_${clean.slice(-10)}`, merged.email);
+        }
+      }
+    } catch {}
+  }
+
+  return { data: dbResult, error: dbError };
 }
 
 // ==============================================================================

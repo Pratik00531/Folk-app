@@ -44,7 +44,9 @@ export default function ProfileModal() {
   const [chantingCommitment, setChantingCommitment] = useState(currentUser.chanting_commitment || 16);
   const [profession, setProfession] = useState(currentUser.college_or_profession || 'Engineering Student / Tech Professional');
   const [phoneError, setPhoneError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
@@ -59,7 +61,7 @@ export default function ProfileModal() {
   useEffect(() => {
     if (isProfileModalOpen) {
       setFullName(currentUser.full_name || '');
-      setPhone(currentUser.phone || '');
+      setPhone((currentUser.phone || '').replace(/\D/g, '').slice(-10));
       setEmail(currentUser.email || '');
       setChantingCommitment(currentUser.chanting_commitment || 16);
       setProfession(currentUser.college_or_profession || 'Engineering Student / Tech Professional');
@@ -67,6 +69,7 @@ export default function ProfileModal() {
       setSelectedGuideId(currentUser.guide_id || null);
       setPhoneError('');
       setSaveSuccess(false);
+      setSaveError(null);
       setUpdateStatus(null);
       setAvatarPreview(currentUser.avatar_url || null);
 
@@ -95,7 +98,7 @@ export default function ProfileModal() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         // Compress to max 400x400 for optimal performance & instant database sync
         const canvas = document.createElement('canvas');
         const maxDim = 400;
@@ -119,10 +122,22 @@ export default function ProfileModal() {
           ctx.drawImage(img, 0, 0, w, h);
           const compressed = canvas.toDataURL('image/jpeg', 0.82);
           setAvatarPreview(compressed);
-          // Instantly sync to user profile and database
-          updateUserProfile({ avatar_url: compressed });
-          setSaveSuccess(true);
-          setTimeout(() => setSaveSuccess(false), 2500);
+          setIsSaving(true);
+          setSaveError(null);
+          try {
+            // Instantly sync to user profile and database
+            const res = await updateUserProfile({ avatar_url: compressed });
+            if (res && res.error) {
+              setSaveError('Failed to save avatar to server');
+            } else {
+              setSaveSuccess(true);
+              setTimeout(() => setSaveSuccess(false), 2500);
+            }
+          } catch {
+            setSaveError('Failed to save avatar');
+          } finally {
+            setIsSaving(false);
+          }
         }
       };
       if (typeof event.target?.result === 'string') {
@@ -168,28 +183,46 @@ export default function ProfileModal() {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.length !== 10) {
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
       setPhoneError('Please enter a valid 10-digit mobile number');
       return;
     }
 
-    updateUserProfile({
-      full_name: fullName.trim() || currentUser.full_name,
-      phone: phone.trim(),
-      email: email.trim(),
-      chanting_commitment: Number(chantingCommitment) || 16,
-      college_or_profession: profession.trim(),
-      guide_name: selectedGuideName,
-      guide_id: selectedGuideId,
-    });
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
 
-    setSaveSuccess(true);
-    setTimeout(() => {
-      setSaveSuccess(false);
-      setIsProfileModalOpen(false);
-    }, 1200);
+    try {
+      const res = await updateUserProfile({
+        full_name: fullName.trim() || currentUser.full_name,
+        phone: cleanPhone,
+        email: email.trim(),
+        chanting_commitment: Number(chantingCommitment) || 16,
+        college_or_profession: profession.trim(),
+        guide_name: selectedGuideName,
+        guide_id: selectedGuideId,
+        avatar_url: avatarPreview || currentUser.avatar_url,
+      });
+
+      if (res && res.error) {
+        setSaveError(res.error.message || 'Failed to save changes to server. Please try again.');
+        setIsSaving(false);
+        return;
+      }
+
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        setIsProfileModalOpen(false);
+      }, 1300);
+    } catch (err: any) {
+      setSaveError(err?.message || 'Error occurred while saving profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -222,11 +255,28 @@ export default function ProfileModal() {
 
         {/* Scrollable Form Body */}
         <form onSubmit={handleSave} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Error Banner */}
+          {saveError && (
+            <div className="p-3 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-bold flex items-center justify-between gap-2 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <X className="w-4 h-4 text-red-600 shrink-0" />
+                <span>{saveError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSaveError(null)}
+                className="text-red-500 hover:text-red-700 p-0.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Success Banner */}
           {saveSuccess && (
-            <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-fadeIn">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Profile updated successfully! Hare Krishna 🙏</span>
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fadeIn">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Profile updated and saved successfully! Hare Krishna 🙏</span>
             </div>
           )}
 
@@ -551,11 +601,20 @@ export default function ProfileModal() {
             </button>
             <button
               type="submit"
-              disabled={phone.length !== 10}
+              disabled={isSaving || phone.replace(/\D/g, '').length !== 10}
               className="flex-2 h-11 rounded-xl saffron-gradient-btn font-extrabold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 transition-all"
             >
-              <Save className="w-4 h-4" />
-              <span>Save Profile</span>
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Save Profile</span>
+                </>
+              )}
             </button>
           </div>
         </form>

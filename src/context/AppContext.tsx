@@ -125,7 +125,7 @@ interface AppContextType {
   toggleTheme: () => void;
   isProfileModalOpen: boolean;
   setIsProfileModalOpen: (open: boolean) => void;
-  updateUserProfile: (updates: Partial<UserProfile>) => void;
+  updateUserProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: any }>;
   isExportModalOpen: boolean;
   setIsExportModalOpen: (open: boolean) => void;
 }
@@ -161,6 +161,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
+  // Immediately hydrate profile from localStorage for offline/reload persistence
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('folk_user_profile');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && (parsed.full_name || parsed.id)) {
+            setCurrentUser((prev) => ({
+              ...prev,
+              ...parsed,
+            }));
+          }
+        }
+      } catch {}
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof document !== 'undefined') {
       if (theme === 'dark') {
@@ -190,23 +208,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const uid = data.session.user.id;
         apiGetProfile(uid).then(({ data: profile }) => {
           if (profile) {
-            setCurrentUser({
+            let localCache: Partial<UserProfile> = {};
+            if (typeof window !== 'undefined') {
+              try {
+                const raw = localStorage.getItem('folk_user_profile');
+                if (raw) localCache = JSON.parse(raw);
+              } catch {}
+            }
+
+            const mergedUser: UserProfile = {
               id: profile.id,
-              folk_id: profile.folk_id,
-              full_name: profile.full_name,
-              phone: profile.phone || '',
-              email: profile.email || data.session?.user.email || '',
-              role: profile.role || 'folk_boy',
-              avatar_url: profile.avatar_url || null,
-              chanting_commitment: profile.chanting_commitment || 16,
-              college_or_profession: profile.college_or_profession || 'Devotee',
-              guide_id: profile.guide_id || null,
-              guide_name: profile.guide_name || null,
-              lead_id: profile.lead_id || null,
-              lead_name: profile.lead_name || null,
+              folk_id: profile.folk_id || localCache.folk_id || 'FOLK-XXXX',
+              full_name: profile.full_name || localCache.full_name || '',
+              phone: profile.phone || localCache.phone || '',
+              email: profile.email || data.session?.user.email || localCache.email || '',
+              role: profile.role || localCache.role || 'folk_boy',
+              avatar_url: profile.avatar_url || localCache.avatar_url || null,
+              chanting_commitment: profile.chanting_commitment || localCache.chanting_commitment || 16,
+              college_or_profession: profile.college_or_profession || localCache.college_or_profession || 'Devotee',
+              guide_id: profile.guide_id || localCache.guide_id || null,
+              guide_name: profile.guide_name || localCache.guide_name || null,
+              lead_id: profile.lead_id || localCache.lead_id || null,
+              lead_name: profile.lead_name || localCache.lead_name || null,
               created_at: profile.created_at,
               updated_at: profile.updated_at,
-            });
+            };
+
+            setCurrentUser(mergedUser);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('folk_user_profile', JSON.stringify(mergedUser));
+            }
           }
         });
 
@@ -531,20 +562,56 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setScreen('login');
   };
 
-  const updateUserProfile = (updates: Partial<UserProfile>) => {
-    setCurrentUser((prev) => ({
-      ...prev,
+  const updateUserProfile = async (updates: Partial<UserProfile>): Promise<{ success: boolean; error?: any }> => {
+    const current = currentUserRef.current;
+    const updatedUser: UserProfile = {
+      ...current,
       ...updates,
       updated_at: new Date().toISOString(),
-    }));
-    if (isSupabaseConfigured) {
-      apiUpdateProfile(currentUser.id, updates).then(() => {
-        // Refresh Guide roster so the Guide sees the updated devotee avatar immediately!
-        apiGetGuideDevotees().then(({ data: devs }) => {
-          if (devs && devs.length > 0) setGuideDevotees(devs);
-        });
-      });
+    };
+
+    setCurrentUser(updatedUser);
+    currentUserRef.current = updatedUser;
+
+    // Immediately persist locally for zero-latency reload and offline resilience
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('folk_user_profile', JSON.stringify(updatedUser));
+        if (updatedUser.phone) {
+          const clean = updatedUser.phone.replace(/\D/g, '');
+          if (clean.length === 10 && updatedUser.email) {
+            localStorage.setItem(`folk_phone_map_${clean}`, updatedUser.email);
+            localStorage.setItem(`folk_phone_map_${clean.slice(-10)}`, updatedUser.email);
+          }
+        }
+      } catch (err) {
+        console.warn('localStorage profile save notice:', err);
+      }
     }
+
+    let backendError: any = null;
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await apiUpdateProfile(current.id, updates);
+        if (error) {
+          console.warn('Supabase profile update warning:', error);
+          backendError = error;
+        } else {
+          // Refresh Guide roster so the Guide sees updated devotee info immediately
+          apiGetGuideDevotees().then(({ data: devs }) => {
+            if (devs && devs.length > 0) setGuideDevotees(devs);
+          });
+        }
+      } catch (err) {
+        console.warn('apiUpdateProfile unexpected error:', err);
+        backendError = err;
+      }
+    }
+
+    return {
+      success: !backendError,
+      error: backendError,
+    };
   };
 
   const todayStr = getIndianTodayStr();
