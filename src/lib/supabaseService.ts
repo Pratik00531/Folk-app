@@ -426,3 +426,32 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
   }
 }
 
+// ==============================================================================
+// 9. REGISTERED GUIDES (For Devotee Sign-up and Guide Selection)
+// ==============================================================================
+
+export async function apiGetRegisteredGuides(): Promise<{
+  data: { id: string; name: string; spiritual_name?: string | null }[];
+  error: any;
+}> {
+  if (!isSupabaseConfigured) return { data: [], error: null };
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, spiritual_name')
+    .eq('role', 'folk_guide')
+    .order('full_name', { ascending: true });
+
+  if (error || !data) return { data: [], error };
+
+  return {
+    data: data.map((g) => ({
+      id: g.id,
+      name: g.spiritual_name ? `${g.full_name} (${g.spiritual_name})` : g.full_name,
+      spiritual_name: g.spiritual_name,
+    })),
+    error: null,
+  };
+}
+
+

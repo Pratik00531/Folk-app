@@ -382,7 +382,7 @@ export default function ProfileModal() {
               <div>
                 <span className="text-[#786E65] block">Assigned FOLK Guide:</span>
                 <span className="font-extrabold text-[#1B1917]">
-                  {currentUser.guide_name || 'HG Amogh Virya Dasa'}
+                  {currentUser.guide_name || 'Assigned Temple Guide'}
                 </span>
               </div>
               <span className="text-[10px] font-bold text-[#216E39] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">

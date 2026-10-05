@@ -180,8 +180,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               avatar_url: profile.avatar_url || null,
               chanting_commitment: profile.chanting_commitment || 16,
               college_or_profession: profile.college_or_profession || 'Devotee',
-              guide_name: 'HG Amogh Virya Dasa',
-              lead_name: 'HG Madhav Das',
+              guide_name: profile.guide_name || null,
+              lead_name: profile.lead_name || null,
               created_at: profile.created_at,
               updated_at: profile.updated_at,
             });
@@ -294,8 +294,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           avatar_url: profile.avatar_url || null,
           chanting_commitment: profile.chanting_commitment || 16,
           college_or_profession: profile.college_or_profession || 'Devotee',
-          guide_name: 'HG Amogh Virya Dasa',
-          lead_name: 'HG Madhav Das',
+          guide_name: profile.guide_name || null,
+          lead_name: profile.lead_name || null,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
         });
@@ -743,8 +743,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (pending.some((d) => d.folk_id === currentUser.folk_id)) {
       setReminder({
         id: `rem-${Date.now()}`,
-        sender_id: 'user-guide-amogh',
-        sender_name: 'HG Amogh Virya Dasa',
+        sender_id: currentUser.id,
+        sender_name: currentUser.spiritual_name || currentUser.full_name || 'FOLK Guide',
         sender_role: 'folk_guide',
         recipient_id: currentUser.id,
         recipient_name: currentUser.full_name,

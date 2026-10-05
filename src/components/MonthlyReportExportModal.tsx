@@ -20,7 +20,7 @@ interface MonthlyReportExportModalProps {
 }
 
 export default function MonthlyReportExportModal({ isOpen, onClose }: MonthlyReportExportModalProps) {
-  const { guideDevotees, sadhanaRecords } = useApp();
+  const { guideDevotees, sadhanaRecords, currentUser } = useApp();
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -216,7 +216,7 @@ export default function MonthlyReportExportModal({ isOpen, onClose }: MonthlyRep
                   MONTHLY SĀDHANA CONSOLIDATED REPORT
                 </h1>
                 <p className="text-xs text-[#786E65]">
-                  Month: October 2026 • Reporting Guide: HG Amogh Virya Dasa
+                  Month: October 2026 • Reporting Guide: {currentUser.spiritual_name || currentUser.full_name || 'FOLK Guide'}
                 </p>
               </div>
               <div className="text-right">
@@ -307,7 +307,7 @@ export default function MonthlyReportExportModal({ isOpen, onClose }: MonthlyRep
           </div>
 
           <div className="mt-5 p-3 rounded-xl bg-stone-50 border border-stone-200 text-[11px] text-[#786E65]">
-            <span className="font-bold text-[#1B1917]">Audit Note:</span> This report includes all 6 spiritual pillars (Maṅgala Ārati, Japa 16 rounds, Sunday Darshan, Śrīmad Bhāgavatam, Japa Finish slot, and Book reading). Prepared by HG Amogh Virya Dasa for FOLK leadership review.
+            <span className="font-bold text-[#1B1917]">Audit Note:</span> This report includes all 6 spiritual pillars (Maṅgala Ārati, Japa 16 rounds, Sunday Darshan, Śrīmad Bhāgavatam, Japa Finish slot, and Book reading). Prepared by {currentUser.spiritual_name || currentUser.full_name || 'FOLK Guide'} for FOLK leadership review.
           </div>
         </div>
       </div>

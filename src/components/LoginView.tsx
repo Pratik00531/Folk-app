@@ -1,17 +1,40 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Phone, Lock, ArrowRight, Shield, User, AlertCircle, CheckCircle2, Mail } from 'lucide-react';
+import {
+  Phone,
+  Lock,
+  ArrowRight,
+  Shield,
+  User,
+  AlertCircle,
+  CheckCircle2,
+  Mail,
+  KeyRound,
+} from 'lucide-react';
+import { apiGetRegisteredGuides } from '@/lib/supabaseService';
 
 export default function LoginView() {
   const { setScreen, switchRole, signIn, isLiveBackend } = useApp();
   const [selectedRoleType, setSelectedRoleType] = useState<'boy' | 'guide'>('boy');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ phone?: string; password?: string }>({});
+  const [guidePasscode, setGuidePasscode] = useState('');
+  const [errors, setErrors] = useState<{ phone?: string; password?: string; guidePasscode?: string }>({});
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Active guides from Supabase
+  const [activeGuides, setActiveGuides] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    apiGetRegisteredGuides().then(({ data }) => {
+      if (data && data.length > 0) {
+        setActiveGuides(data);
+      }
+    });
+  }, []);
 
   const handleRoleSelect = (roleType: 'boy' | 'guide') => {
     setSelectedRoleType(roleType);
@@ -21,10 +44,13 @@ export default function LoginView() {
       switchRole('folk_guide');
     }
     setErrors({});
+    setAuthError(null);
   };
 
+  const expectedGuidePasscode = process.env.NEXT_PUBLIC_GUIDE_SECRET_PASSCODE || 'FOLK@GUIDE108';
+
   const validate = () => {
-    const newErrors: { phone?: string; password?: string } = {};
+    const newErrors: { phone?: string; password?: string; guidePasscode?: string } = {};
 
     const trimmed = phone.trim();
     if (!trimmed) {
@@ -47,12 +73,23 @@ export default function LoginView() {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
+    // Guide Passcode validation rule
+    if (selectedRoleType === 'guide') {
+      if (!guidePasscode.trim()) {
+        newErrors.guidePasscode = 'Guide security passcode is required';
+      } else if (guidePasscode.trim() !== expectedGuidePasscode) {
+        newErrors.guidePasscode = 'Invalid Guide passcode. Access restricted to authorized guides.';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
+
     if (!validate()) {
       return;
     }
@@ -102,19 +139,22 @@ export default function LoginView() {
           onClick={() => setScreen('welcome')}
           className="text-xs font-semibold text-[#786E65] hover:text-[#1B1917] mb-6 flex items-center gap-1.5 cursor-pointer"
         >
-          ← Back
+          <span>← Back</span>
         </button>
 
-        <h1 className="text-3xl font-extrabold tracking-tight text-[#1B1917] mb-1">
-          Welcome back
+        <span className="text-xs font-extrabold tracking-widest text-[#E07A2B] uppercase">
+          Portal Sign In
+        </span>
+        <h1 className="text-3xl font-extrabold tracking-tight text-[#1B1917] mt-1">
+          Welcome Back
         </h1>
-        <p className="text-xs font-medium text-[#6E665E]">
-          Sign in to your FOLK Sādhana account
+        <p className="text-xs text-[#6E665E] mt-1">
+          Sign in to report your Sādhana, track your streak, and view readings.
         </p>
 
         {authError && (
           <div className="mt-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
             <span>{authError}</span>
           </div>
         )}
@@ -147,14 +187,28 @@ export default function LoginView() {
             }`}
           >
             <Shield className="w-4 h-4 text-amber-400" />
-            <span>Guide</span>
+            <span>FOLK Guide</span>
           </button>
         </div>
 
-        {selectedRoleType === 'boy' && (
-          <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-[#7A4B1A] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#E07A2B]" />
-            <span>Folk Leads also sign in as Folk Boy with elevated oversight privileges.</span>
+        {/* Dynamic Display of Active Registered Guides for Folk Boys */}
+        {selectedRoleType === 'boy' && activeGuides.length > 0 && (
+          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-[#7A4B1A]">
+            <div className="flex items-center gap-1.5 font-bold text-[#8C460D] mb-1">
+              <Shield className="w-3.5 h-3.5 text-[#E07A2B]" />
+              <span>Active Temple Guides</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 mt-1">
+              {activeGuides.map((g) => (
+                <span
+                  key={g.id}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 text-[#1B1917] font-bold text-[11px] shadow-2xs border border-amber-200/60"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  {g.name}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
@@ -218,12 +272,9 @@ export default function LoginView() {
         {/* Input: Password */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between ml-1">
-            <label className="text-xs font-bold text-[#59534E]">
-              Password
-            </label>
-            <span className="text-[10px] text-[#8E867F]">Min 6 characters</span>
+            <label className="text-xs font-bold text-[#59534E]">Password</label>
+            <span className="text-[10px] text-[#8E867F]">At least 6 characters</span>
           </div>
-
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
               <Lock className="w-4 h-4" />
@@ -233,12 +284,17 @@ export default function LoginView() {
               value={password}
               onChange={(e) => handlePasswordChange(e.target.value)}
               placeholder="Enter your password"
-              className={`w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs transition-all ${
+              className={`w-full h-12 pl-10 pr-10 rounded-2xl bg-white/90 border text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs transition-all ${
                 errors.password
                   ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200'
                   : 'border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15'
               }`}
             />
+            {password.length >= 6 && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-emerald-600">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            )}
           </div>
           {errors.password && (
             <div className="flex items-center gap-1 text-[11px] font-bold text-red-600 ml-1">
@@ -248,18 +304,57 @@ export default function LoginView() {
           )}
         </div>
 
-        {/* Primary Login Button */}
+        {/* Input: Guide Security Passcode (Only when Guide role is selected) */}
+        {selectedRoleType === 'guide' && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-xs font-bold text-[#59534E]">
+                Guide Authorization Passcode
+              </label>
+              <span className="text-[10px] text-[#E07A2B] font-bold">Temple Counselor Code</span>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
+                <KeyRound className="w-4 h-4 text-[#E07A2B]" />
+              </div>
+              <input
+                type="password"
+                value={guidePasscode}
+                onChange={(e) => {
+                  setGuidePasscode(e.target.value);
+                  if (errors.guidePasscode) {
+                    setErrors((prev) => ({ ...prev, guidePasscode: undefined }));
+                  }
+                }}
+                placeholder="Enter secret Guide passcode"
+                className={`w-full h-12 pl-10 pr-10 rounded-2xl bg-white/90 border text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs font-mono transition-all ${
+                  errors.guidePasscode
+                    ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200'
+                    : 'border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15'
+                }`}
+              />
+            </div>
+            {errors.guidePasscode && (
+              <div className="flex items-center gap-1 text-[11px] font-bold text-red-600 ml-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>{errors.guidePasscode}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Submit Button */}
         <div className="pt-2">
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-13 rounded-2xl saffron-gradient-btn font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full h-13 rounded-2xl saffron-gradient-btn font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.99] transition-all disabled:opacity-50 text-white"
           >
             {loading ? (
-              <span>Signing in...</span>
+              <span>Authenticating...</span>
             ) : (
               <>
-                <span>Login as {selectedRoleType === 'guide' ? 'Guide' : 'Folk Boy'}</span>
+                <span>Sign In as {selectedRoleType === 'boy' ? 'Folk Boy' : 'Guide'}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -267,16 +362,16 @@ export default function LoginView() {
         </div>
       </form>
 
-      {/* Bottom Switch to Signup */}
+      {/* Switch to Signup */}
       <div className="text-center pb-6">
         <p className="text-xs text-[#6E665E]">
-          New to FOLK?{' '}
+          Don&apos;t have an account yet?{' '}
           <button
             type="button"
             onClick={() => setScreen('signup')}
             className="font-bold text-[#C86315] hover:underline cursor-pointer"
           >
-            Create account
+            Create Account
           </button>
         </p>
       </div>

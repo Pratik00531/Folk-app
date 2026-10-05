@@ -65,6 +65,7 @@ function getDotTooltip(status: PillarDotStatus, pillarName: string) {
 
 export default function GuideDashboardView() {
   const {
+    currentUser,
     guideDevotees,
     setSelectedDevoteeForDetail,
     switchRole,
@@ -116,13 +117,13 @@ export default function GuideDashboardView() {
   };
 
   const handleApprove = (reqId: string, devoteeName: string) => {
-    approveSadhanaRequest(reqId, 'HG Amogh Virya Dasa (Guide)');
+    approveSadhanaRequest(reqId, `${currentUser.full_name || 'FOLK Guide'} (Guide)`);
     setApprovalToast(`Approved late Sādhana for ${devoteeName}! Updated across heatmap and calendar.`);
     setTimeout(() => setApprovalToast(null), 4000);
   };
 
   const handleReject = (reqId: string, devoteeName: string) => {
-    rejectSadhanaRequest(reqId, 'HG Amogh Virya Dasa (Guide)');
+    rejectSadhanaRequest(reqId, `${currentUser.full_name || 'FOLK Guide'} (Guide)`);
     setApprovalToast(`Rejected late Sādhana request for ${devoteeName}.`);
     setTimeout(() => setApprovalToast(null), 4000);
   };
@@ -138,8 +139,8 @@ export default function GuideDashboardView() {
             className="relative w-11 h-11 rounded-full overflow-hidden border-2 border-amber-300 shadow-xs shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all"
           >
             <img
-              src="/assets/images/BookRead.jpg"
-              alt="HG Amogh Virya Dasa"
+              src={currentUser.avatar_url || '/assets/images/BookRead.jpg'}
+              alt={currentUser.full_name || 'FOLK Guide'}
               className="w-full h-full object-cover"
             />
           </div>
@@ -148,7 +149,7 @@ export default function GuideDashboardView() {
               FOLK Guide Dashboard
             </span>
             <h1 className="text-base font-extrabold text-[#1B1917] leading-tight">
-              HG Amogh Virya Dasa
+              {currentUser.spiritual_name || currentUser.full_name || 'FOLK Guide'}
             </h1>
           </div>
         </div>

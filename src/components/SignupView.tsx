@@ -1,8 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { User, Phone, Mail, Lock, Shield, ArrowRight, ArrowLeft, CheckCircle2, ShieldCheck } from 'lucide-react';
+import {
+  User,
+  Phone,
+  Mail,
+  Lock,
+  Shield,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  ShieldCheck,
+  KeyRound,
+  AlertCircle,
+} from 'lucide-react';
+import { apiGetRegisteredGuides } from '@/lib/supabaseService';
 
 export default function SignupView() {
   const { setScreen, signUp, isLiveBackend } = useApp();
@@ -10,15 +23,38 @@ export default function SignupView() {
   const [loading, setLoading] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Role: Folk Boy vs Folk Guide
+  const [role, setRole] = useState<'folk_boy' | 'folk_guide'>('folk_boy');
+  const [guidePasscode, setGuidePasscode] = useState('');
+  const [guidePasscodeError, setGuidePasscodeError] = useState('');
+
   // Form State
   const [fullName, setFullName] = useState('');
+  const [spiritualName, setSpiritualName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [selectedGuide, setSelectedGuide] = useState('HG Amogh Virya Dasa');
+
+  // Guides from Supabase
+  const [registeredGuides, setRegisteredGuides] = useState<{ id: string; name: string }[]>([]);
+  const [selectedGuide, setSelectedGuide] = useState('');
+  const [customGuideName, setCustomGuideName] = useState('');
+  const [isCustomGuide, setIsCustomGuide] = useState(false);
+
+  // Load real registered guides from Supabase
+  useEffect(() => {
+    apiGetRegisteredGuides().then(({ data }) => {
+      if (data && data.length > 0) {
+        setRegisteredGuides(data);
+        setSelectedGuide(data[0].name);
+      } else {
+        setIsCustomGuide(true);
+      }
+    });
+  }, []);
 
   // Phone 10-digit validation check
   const handlePhoneChange = (val: string) => {
@@ -31,8 +67,11 @@ export default function SignupView() {
     }
   };
 
+  const expectedPasscode = process.env.NEXT_PUBLIC_GUIDE_SECRET_PASSCODE || 'FOLK@GUIDE108';
+
   const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
 
     if (step === 1) {
       if (phone.length !== 10) {
@@ -58,23 +97,40 @@ export default function SignupView() {
     }
 
     if (step === 3) {
+      // Guide verification passcode check
+      if (role === 'folk_guide') {
+        if (!guidePasscode.trim()) {
+          setGuidePasscodeError('Guide security code is required');
+          return;
+        }
+        if (guidePasscode.trim() !== expectedPasscode) {
+          setGuidePasscodeError('Invalid Guide Passcode. Only authorized temple counselors can create a Guide account.');
+          return;
+        }
+        setGuidePasscodeError('');
+      }
+
       if (isLiveBackend) {
         setLoading(true);
         setAuthError(null);
         const userEmail = email.trim() || `${phone}@folk.org`;
+        const guideToAssign = isCustomGuide ? customGuideName.trim() : selectedGuide;
+
         const { error } = await signUp({
           email: userEmail,
           password,
-          fullName,
-          phone,
-          role: 'folk_boy',
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          role: role,
         });
+
         setLoading(false);
         if (error) {
           setAuthError(error.message || 'Registration failed. Please check your credentials.');
           return;
         }
       }
+
       // User created — FOLK ID is generated in background and available in profile
       setScreen('home');
     }
@@ -110,17 +166,18 @@ export default function SignupView() {
         <h1 className="text-2xl font-extrabold tracking-tight text-[#1B1917]">
           {step === 1 && 'Account Details'}
           {step === 2 && 'Security Credentials'}
-          {step === 3 && 'Select FOLK Guide'}
+          {step === 3 && (role === 'folk_guide' ? 'Guide Authorization' : 'Select FOLK Guide')}
         </h1>
         <p className="text-xs text-[#6E665E] mt-0.5">
           {step === 1 && 'Enter your contact information'}
           {step === 2 && 'Create a secure password'}
-          {step === 3 && 'Connect with your Guide'}
+          {step === 3 && (role === 'folk_guide' ? 'Verify your Guide passcode' : 'Connect with your Guide')}
         </p>
 
         {authError && (
-          <div className="mt-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
-            {authError}
+          <div className="mt-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+            <span>{authError}</span>
           </div>
         )}
       </div>
@@ -129,10 +186,43 @@ export default function SignupView() {
       <form onSubmit={handleNext} className="space-y-4 my-auto py-4">
         {step === 1 && (
           <>
+            {/* Role Selector: Devotee vs Guide */}
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-[#59534E] ml-1">
+                Registering As
+              </label>
+              <div className="p-1 rounded-2xl bg-white/70 border border-white/80 shadow-xs flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setRole('folk_boy')}
+                  className={`flex-1 py-2.5 rounded-xl text-center text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    role === 'folk_boy'
+                      ? 'bg-[#E07A2B] text-white shadow-xs'
+                      : 'text-[#6E665E] hover:text-[#1B1917]'
+                  }`}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Folk Boy / Lead</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('folk_guide')}
+                  className={`flex-1 py-2.5 rounded-xl text-center text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    role === 'folk_guide'
+                      ? 'bg-[#1B1917] text-white shadow-xs'
+                      : 'text-[#6E665E] hover:text-[#1B1917]'
+                  }`}
+                >
+                  <Shield className="w-3.5 h-3.5 text-amber-400" />
+                  <span>FOLK Guide</span>
+                </button>
+              </div>
+            </div>
+
             {/* 1. Full Name */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#59534E] ml-1">
-                Full Name
+                Full Legal Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
@@ -162,7 +252,7 @@ export default function SignupView() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@folkindia.org"
+                  placeholder="name@gmail.com"
                   required
                   className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15 text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs"
                 />
@@ -198,9 +288,9 @@ export default function SignupView() {
                 />
               </div>
               {phoneError && (
-                <div className="text-[11px] font-semibold text-red-500 ml-1">
+                <p className="text-[11px] font-medium text-red-500 ml-1">
                   {phoneError}
-                </div>
+                </p>
               )}
             </div>
           </>
@@ -208,9 +298,10 @@ export default function SignupView() {
 
         {step === 2 && (
           <>
+            {/* Password */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#59534E] ml-1">
-                Password
+                Create Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
@@ -220,13 +311,14 @@ export default function SignupView() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimum 6 characters"
+                  placeholder="At least 6 characters"
                   required
                   className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15 text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs"
                 />
               </div>
             </div>
 
+            {/* Confirm Password */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#59534E] ml-1">
                 Confirm Password
@@ -239,50 +331,136 @@ export default function SignupView() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Re-enter password"
+                  placeholder="Repeat your password"
                   required
                   className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15 text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs"
                 />
               </div>
               {passwordError && (
-                <div className="text-[11px] font-semibold text-red-500 ml-1">
-                  {passwordError}
+                <div className="flex items-center gap-1 text-[11px] font-bold text-red-600 ml-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span>{passwordError}</span>
                 </div>
               )}
             </div>
 
             <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-[#7A4B1A] flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#E07A2B] shrink-0" />
-              <span>Email verification is used to protect your account.</span>
+              <span>Passwords are encrypted and secured in Supabase PostgreSQL.</span>
             </div>
           </>
         )}
 
         {step === 3 && (
           <>
-            {/* ONLY Guide option provided */}
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-[#59534E] ml-1">
-                Who is your FOLK Guide?
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
-                  <Shield className="w-4 h-4 text-[#E07A2B]" />
+            {role === 'folk_guide' ? (
+              // Guide Authorization Passcode verification
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#8C460D] mb-1">
+                    <KeyRound className="w-4 h-4 text-[#E07A2B]" />
+                    <span>Guide Authorization Required</span>
+                  </div>
+                  <p className="text-[11px] text-[#786E65] leading-relaxed">
+                    Only authorized temple counselors can create a Guide account to oversee boys and monitor Sādhana. Enter the security code provided by Temple Leadership.
+                  </p>
                 </div>
-                <select
-                  value={selectedGuide}
-                  onChange={(e) => setSelectedGuide(e.target.value)}
-                  className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#1B1917] outline-none shadow-xs cursor-pointer"
-                >
-                  <option value="HG Amogh Virya Dasa">HG Amogh Virya Dasa</option>
-                  <option value="HG Sundar Gopal Dasa">HG Sundar Gopal Dasa</option>
-                  <option value="HG Achyuta Gauranga Dasa">HG Achyuta Gauranga Dasa</option>
-                </select>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-[#59534E] ml-1">
+                    Guide Passcode
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
+                      <KeyRound className="w-4 h-4 text-[#E07A2B]" />
+                    </div>
+                    <input
+                      type="password"
+                      value={guidePasscode}
+                      onChange={(e) => {
+                        setGuidePasscode(e.target.value);
+                        setGuidePasscodeError('');
+                      }}
+                      placeholder="Enter secret Guide passcode"
+                      required
+                      className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15 text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs font-mono"
+                    />
+                  </div>
+                  {guidePasscodeError && (
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-red-600 ml-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>{guidePasscodeError}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-[10px] text-[#786E65] ml-1">
-                Select your designated temple counselor / guide.
-              </p>
-            </div>
+            ) : (
+              // Devotee Guide Selection from Live Database
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-[#59534E] ml-1">
+                  Who is your FOLK Guide?
+                </label>
+
+                {registeredGuides.length > 0 && !isCustomGuide ? (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
+                        <Shield className="w-4 h-4 text-[#E07A2B]" />
+                      </div>
+                      <select
+                        value={selectedGuide}
+                        onChange={(e) => {
+                          if (e.target.value === '__custom__') {
+                            setIsCustomGuide(true);
+                          } else {
+                            setSelectedGuide(e.target.value);
+                          }
+                        }}
+                        className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#1B1917] outline-none shadow-xs cursor-pointer"
+                      >
+                        {registeredGuides.map((g) => (
+                          <option key={g.id} value={g.name}>
+                            {g.name}
+                          </option>
+                        ))}
+                        <option value="__custom__">+ Enter Another Guide Name...</option>
+                      </select>
+                    </div>
+                    <p className="text-[10px] text-[#786E65] ml-1">
+                      Showing real guides registered in the database.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
+                        <Shield className="w-4 h-4 text-[#E07A2B]" />
+                      </div>
+                      <input
+                        type="text"
+                        value={customGuideName}
+                        onChange={(e) => setCustomGuideName(e.target.value)}
+                        placeholder="Enter your Guide's Name"
+                        required
+                        className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15 text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs"
+                      />
+                    </div>
+                    {registeredGuides.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomGuide(false)}
+                        className="text-[10px] font-bold text-[#E07A2B] hover:underline ml-1"
+                      >
+                        ← Select from registered guides list
+                      </button>
+                    )}
+                    <p className="text-[10px] text-[#786E65] ml-1">
+                      Enter the devotee name of your assigned temple guide.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -290,10 +468,10 @@ export default function SignupView() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-13 rounded-2xl saffron-gradient-btn font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full h-13 rounded-2xl saffron-gradient-btn font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed text-white"
           >
             {loading ? (
-              <span>Registering Devotee...</span>
+              <span>Registering {role === 'folk_guide' ? 'Guide' : 'Devotee'}...</span>
             ) : step < 3 ? (
               <>
                 <span>Continue</span>

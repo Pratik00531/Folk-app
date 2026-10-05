@@ -26,7 +26,7 @@ interface SadhanaReportExportModalProps {
 export type ExportScope = 'week' | 'month' | 'custom';
 
 export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaReportExportModalProps) {
-  const { guideDevotees, sadhanaRecords } = useApp();
+  const { guideDevotees, sadhanaRecords, currentUser } = useApp();
 
   const [scope, setScope] = useState<ExportScope>('month');
   const [selectedMonth, setSelectedMonth] = useState<'oct' | 'sep'>('oct');
@@ -168,7 +168,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
               <td colspan="12" class="title-banner">ISKCON FOLK SĀDHANA PERFORMANCE REPORT</td>
             </tr>
             <tr>
-              <td colspan="12" class="meta-info">Period: ${dateRangeInfo.label} | Scope: ${dateRangeInfo.daysCount} Days | Guide: HG Amogh Virya Dasa | Total Devotees: ${totalDevotees}</td>
+              <td colspan="12" class="meta-info">Period: ${dateRangeInfo.label} | Scope: ${dateRangeInfo.daysCount} Days | Guide: ${currentUser.spiritual_name || currentUser.full_name || 'FOLK Guide'} | Total Devotees: ${totalDevotees}</td>
             </tr>
             <tr>
               <th>Devotee Name</th>
