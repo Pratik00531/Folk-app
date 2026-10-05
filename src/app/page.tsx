@@ -84,10 +84,11 @@ function MainContent() {
 
   // Native Android Hardware Back Button & Gesture Handler (Native only)
   useEffect(() => {
-    let removeListener: (() => void) | null = null;
+    let isSubscribed = true;
 
     const setupListener = async () => {
       try {
+        if (typeof window === 'undefined') return;
         const { Capacitor } = await import('@capacitor/core');
         if (!Capacitor.isNativePlatform()) return;
 
@@ -105,30 +106,30 @@ function MainContent() {
           } else if (s.currentScreen === 'signup' || s.currentScreen === 'login') {
             s.setScreen('welcome');
           } else {
-            App.exitApp();
+            try {
+              App.exitApp();
+            } catch {
+              // ignore
+            }
           }
         });
 
-        removeListener = () => {
+        if (!isSubscribed && listener) {
           try {
-            if (listener && typeof listener.remove === 'function') {
-              listener.remove();
-            }
+            await listener.remove();
           } catch {
-            // ignore cleanup errors
+            // ignore
           }
-        };
+        }
       } catch {
         // Not running in capacitor or plugin unavailable
       }
     };
 
-    setupListener();
+    setupListener().catch(() => {});
 
     return () => {
-      if (removeListener) {
-        removeListener();
-      }
+      isSubscribed = false;
     };
   }, []);
 
