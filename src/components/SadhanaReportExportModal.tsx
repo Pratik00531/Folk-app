@@ -339,23 +339,23 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-black/75 backdrop-blur-md transition-all">
-      <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-[32px] bg-white text-[#1B1917] shadow-2xl border border-stone-200 overflow-hidden">
+      <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-[32px] bg-white dark:bg-[#1C1816] text-[#1B1917] dark:text-stone-100 shadow-2xl border border-stone-200 dark:border-stone-800 overflow-hidden">
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-stone-200/70 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-amber-500/5 to-transparent">
+        <div className="px-5 py-4 border-b border-stone-200/70 dark:border-stone-800 flex items-center justify-between bg-gradient-to-r from-emerald-500/10 via-amber-500/5 to-transparent dark:from-emerald-950/40 dark:via-amber-950/20 dark:to-transparent">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-[#216E39] text-white flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-2xl bg-[#216E39] dark:bg-emerald-700 text-white flex items-center justify-center shadow-xs">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-extrabold text-[#1B1917] leading-tight">
+                <h2 className="text-base font-extrabold text-[#1B1917] dark:text-stone-100 leading-tight">
                   Export Sādhana Reports
                 </h2>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 px-2 py-0.5 rounded-full">
                   Live Preview & Averages
                 </span>
               </div>
-              <p className="text-[11px] text-[#786E65]">
+              <p className="text-[11px] text-[#786E65] dark:text-stone-400">
                 Week, Month, or Custom range with color-formatted Excel output
               </p>
             </div>
@@ -364,7 +364,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-[#786E65] hover:text-[#1B1917] transition-all cursor-pointer"
+            className="w-8 h-8 rounded-full bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 flex items-center justify-center text-[#786E65] dark:text-stone-400 hover:text-[#1B1917] dark:hover:text-stone-100 transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -374,15 +374,15 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Download Toast Notification */}
           {downloadSuccess && (
-            <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-fadeIn">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fadeIn">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>{downloadSuccess}</span>
             </div>
           )}
 
           {/* 1. SCOPE SELECTOR TABS (Week / Month / Custom) */}
-          <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200/70">
-            <label className="text-[11px] font-bold text-[#786E65] uppercase tracking-wider block mb-2">
+          <div className="p-3 rounded-2xl bg-stone-50 dark:bg-stone-900/60 border border-stone-200/70 dark:border-stone-800">
+            <label className="text-[11px] font-bold text-[#786E65] dark:text-stone-400 uppercase tracking-wider block mb-2">
               Select Export Duration & Range:
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -392,7 +392,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                 className={`py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   scope === 'week'
                     ? 'bg-[#E07A2B] text-white shadow-2xs'
-                    : 'bg-white text-[#786E65] border border-stone-200 hover:bg-stone-100'
+                    : 'bg-white dark:bg-stone-800 text-[#786E65] dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-750'
                 }`}
               >
                 <Clock className="w-3.5 h-3.5" />
@@ -405,7 +405,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                 className={`py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   scope === 'month'
                     ? 'bg-[#216E39] text-white shadow-2xs'
-                    : 'bg-white text-[#786E65] border border-stone-200 hover:bg-stone-100'
+                    : 'bg-white dark:bg-stone-800 text-[#786E65] dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-750'
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5" />
@@ -417,8 +417,8 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                 onClick={() => setScope('custom')}
                 className={`py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   scope === 'custom'
-                    ? 'bg-[#1B1917] text-white shadow-2xs'
-                    : 'bg-white text-[#786E65] border border-stone-200 hover:bg-stone-100'
+                    ? 'bg-[#1B1917] dark:bg-amber-600 text-white shadow-2xs'
+                    : 'bg-white dark:bg-stone-800 text-[#786E65] dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-750'
                 }`}
               >
                 <Filter className="w-3.5 h-3.5" />
@@ -428,15 +428,15 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
 
             {/* Scope Specific Controls */}
             {scope === 'month' && (
-              <div className="mt-3 flex items-center gap-2 pt-2 border-t border-stone-200/60">
-                <span className="text-[11px] font-bold text-[#2C2825]">Month:</span>
+              <div className="mt-3 flex items-center gap-2 pt-2 border-t border-stone-200/60 dark:border-stone-800">
+                <span className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300">Month:</span>
                 <button
                   type="button"
                   onClick={() => setSelectedMonth('current')}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     selectedMonth === 'current'
-                      ? 'bg-emerald-100 text-[#15803D] border border-emerald-300'
-                      : 'bg-white text-[#786E65] border border-stone-200'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/60 text-[#15803D] dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                      : 'bg-white dark:bg-stone-800 text-[#786E65] dark:text-stone-300 border border-stone-200 dark:border-stone-700'
                   }`}
                 >
                   {currentMonthConfig.label} (Current)
@@ -446,8 +446,8 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                   onClick={() => setSelectedMonth('prev')}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     selectedMonth === 'prev'
-                      ? 'bg-emerald-100 text-[#15803D] border border-emerald-300'
-                      : 'bg-white text-[#786E65] border border-stone-200'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/60 text-[#15803D] dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                      : 'bg-white dark:bg-stone-800 text-[#786E65] dark:text-stone-300 border border-stone-200 dark:border-stone-700'
                   }`}
                 >
                   {prevMonthConfig.label} (Last Month)
@@ -456,27 +456,27 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
             )}
 
             {scope === 'custom' && (
-              <div className="mt-3 grid grid-cols-2 gap-3 pt-2 border-t border-stone-200/60">
+              <div className="mt-3 grid grid-cols-2 gap-3 pt-2 border-t border-stone-200/60 dark:border-stone-800">
                 <div>
-                  <label className="text-[10px] font-bold text-[#786E65] block mb-1">
+                  <label className="text-[10px] font-bold text-[#786E65] dark:text-stone-400 block mb-1">
                     Start Date:
                   </label>
                   <input
                     type="date"
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="w-full h-9 px-2.5 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-[#1B1917] outline-none"
+                    className="w-full h-9 px-2.5 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-[#1B1917] dark:text-stone-100 outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-[#786E65] block mb-1">
+                  <label className="text-[10px] font-bold text-[#786E65] dark:text-stone-400 block mb-1">
                     End Date:
                   </label>
                   <input
                     type="date"
                     value={customEndDate}
                     onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="w-full h-9 px-2.5 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-[#1B1917] outline-none"
+                    className="w-full h-9 px-2.5 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-[#1B1917] dark:text-stone-100 outline-none"
                   />
                 </div>
               </div>
@@ -485,38 +485,38 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
 
           {/* 2. DYNAMIC BATCH AVERAGE STATS CARDS */}
           <div className="grid grid-cols-4 gap-2">
-            <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-center">
-              <span className="text-[10px] font-bold uppercase text-[#8C460D] block">
+            <div className="p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/40 text-center">
+              <span className="text-[10px] font-bold uppercase text-[#8C460D] dark:text-amber-400 block">
                 Selected Days
               </span>
-              <span className="text-base font-black text-[#1B1917]">
+              <span className="text-base font-black text-[#1B1917] dark:text-stone-100">
                 {dateRangeInfo.daysCount} Days
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 text-center">
-              <span className="text-[10px] font-bold uppercase text-[#15803D] block">
+            <div className="p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/40 text-center">
+              <span className="text-[10px] font-bold uppercase text-[#15803D] dark:text-emerald-400 block">
                 Batch Avg
               </span>
-              <span className="text-base font-black text-[#15803D]">
+              <span className="text-base font-black text-[#15803D] dark:text-emerald-300">
                 {batchAvgPts}/100
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-orange-50/80 border border-orange-200/80 text-center">
-              <span className="text-[10px] font-bold uppercase text-[#C86315] block">
+            <div className="p-3 rounded-2xl bg-orange-50/80 dark:bg-orange-950/40 border border-orange-200/80 dark:border-orange-800/40 text-center">
+              <span className="text-[10px] font-bold uppercase text-[#C86315] dark:text-orange-400 block">
                 Maṅgala %
               </span>
-              <span className="text-base font-black text-[#1B1917]">
+              <span className="text-base font-black text-[#1B1917] dark:text-stone-100">
                 {batchAvgMangala}%
               </span>
             </div>
 
-            <div className="p-3 rounded-2xl bg-purple-50/80 border border-purple-200/80 text-center">
-              <span className="text-[10px] font-bold uppercase text-purple-700 block">
+            <div className="p-3 rounded-2xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/40 text-center">
+              <span className="text-[10px] font-bold uppercase text-purple-700 dark:text-purple-400 block">
                 SB Hearing
               </span>
-              <span className="text-base font-black text-[#1B1917]">
+              <span className="text-base font-black text-[#1B1917] dark:text-stone-100">
                 {batchAvgSbHearing} mins
               </span>
             </div>
@@ -524,20 +524,20 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
 
           {/* 3. INTERACTIVE LIVE PREVIEW TABLE */}
           {/* "Preview should be shown ... and then download !!" */}
-          <div className="rounded-2xl border border-stone-200/80 overflow-hidden bg-white shadow-xs">
-            <div className="px-4 py-2.5 bg-stone-50 border-b border-stone-200/80 flex items-center justify-between">
-              <span className="text-xs font-black text-[#1B1917] flex items-center gap-1.5">
+          <div className="rounded-2xl border border-stone-200/80 dark:border-stone-800 overflow-hidden bg-white dark:bg-stone-900/80 shadow-xs">
+            <div className="px-4 py-2.5 bg-stone-50 dark:bg-stone-800/80 border-b border-stone-200/80 dark:border-stone-800 flex items-center justify-between">
+              <span className="text-xs font-black text-[#1B1917] dark:text-stone-100 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-[#E07A2B]" />
                 Interactive Table Preview ({dateRangeInfo.label})
               </span>
-              <span className="text-[10px] font-bold text-[#786E65]">
+              <span className="text-[10px] font-bold text-[#786E65] dark:text-stone-400">
                 {totalDevotees} Devotees Calculated
               </span>
             </div>
 
             <div className="overflow-x-auto max-h-64">
               <table className="w-full text-[11px] text-left border-collapse">
-                <thead className="bg-[#FAF8F5] text-[#786E65] uppercase text-[9px] font-black sticky top-0 border-b border-stone-200">
+                <thead className="bg-[#FAF8F5] dark:bg-stone-800 text-[#786E65] dark:text-stone-300 uppercase text-[9px] font-black sticky top-0 border-b border-stone-200 dark:border-stone-700">
                   <tr>
                     <th className="py-2 px-3">Devotee</th>
                     <th className="py-2 px-2 text-center">FOLK ID</th>
@@ -548,54 +548,54 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                     <th className="py-2 px-2 text-center">Late (Blue)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                   {devoteeReport.map((r) => (
-                    <tr key={r.id} className="hover:bg-amber-50/40 transition-colors">
+                    <tr key={r.id} className="hover:bg-amber-50/40 dark:hover:bg-amber-950/30 transition-colors">
                       <td className="py-2 px-3">
-                        <span className="font-extrabold text-[#1B1917] block">
+                        <span className="font-extrabold text-[#1B1917] dark:text-stone-100 block">
                           {r.name}
                         </span>
-                        <span className="text-[10px] text-[#786E65]">
+                        <span className="text-[10px] text-[#786E65] dark:text-stone-400">
                           {r.role} · {r.streak}d streak
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-center font-mono text-[10px] text-stone-600">
+                      <td className="py-2 px-2 text-center font-mono text-[10px] text-stone-600 dark:text-stone-400">
                         {r.folk_id}
                       </td>
                       <td className="py-2 px-2 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-[#15803D] font-black text-[10px]">
+                        <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-[#15803D] dark:text-emerald-300 font-black text-[10px]">
                           {r.avgPts}
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-center font-bold text-stone-700">
+                      <td className="py-2 px-2 text-center font-bold text-stone-700 dark:text-stone-300">
                         {r.mangalaPct}%
                       </td>
-                      <td className="py-2 px-2 text-center font-extrabold text-[#8C460D]">
+                      <td className="py-2 px-2 text-center font-extrabold text-[#8C460D] dark:text-amber-400">
                         {r.sbHearingMins}m
                       </td>
-                      <td className="py-2 px-2 text-center text-stone-600 font-semibold">
+                      <td className="py-2 px-2 text-center text-stone-600 dark:text-stone-400 font-semibold">
                         {r.readingHours}h
                       </td>
                       <td className="py-2 px-2 text-center">
                         {r.lateSubmissions > 0 ? (
-                          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold text-[9px] border border-blue-200">
+                          <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 font-bold text-[9px] border border-blue-200 dark:border-blue-800">
                             {r.lateSubmissions} Blue
                           </span>
                         ) : (
-                          <span className="text-stone-400 text-[10px]">-</span>
+                          <span className="text-stone-400 dark:text-stone-600 text-[10px]">-</span>
                         )}
                       </td>
                     </tr>
                   ))}
 
                   {/* Summary Footer Row */}
-                  <tr className="bg-amber-50/90 font-extrabold text-[#9C4507] border-t-2 border-amber-300">
+                  <tr className="bg-amber-50/90 dark:bg-amber-950/60 font-extrabold text-[#9C4507] dark:text-amber-300 border-t-2 border-amber-300 dark:border-amber-700/60">
                     <td className="py-2 px-3 uppercase text-[10px] tracking-wider">
                       Batch Total Average
                     </td>
                     <td className="py-2 px-2 text-center text-[10px]">-</td>
                     <td className="py-2 px-2 text-center">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 font-black text-[10px]">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-200 dark:bg-emerald-800/80 text-emerald-900 dark:text-emerald-100 font-black text-[10px]">
                         {batchAvgPts}/100
                       </span>
                     </td>
@@ -617,8 +617,8 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
         </div>
 
         {/* Modal Actions Footer */}
-        <div className="p-4 border-t border-stone-200 bg-stone-50 flex items-center justify-between gap-3">
-          <div className="text-[11px] text-[#786E65] hidden sm:block">
+        <div className="p-4 border-t border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-[#151210] flex items-center justify-between gap-3">
+          <div className="text-[11px] text-[#786E65] dark:text-stone-400 hidden sm:block">
             Formatted Excel includes color highlights, bold totals & headers.
           </div>
 
@@ -626,25 +626,25 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
             <button
               type="button"
               onClick={handleExportCSV}
-              className="py-2 px-3 rounded-xl bg-white border border-stone-200 hover:bg-stone-100 text-[#1B1917] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700 text-[#1B1917] dark:text-stone-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
             >
-              <Download className="w-3.5 h-3.5 text-stone-600" />
+              <Download className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
               <span>CSV</span>
             </button>
 
             <button
               type="button"
               onClick={() => window.print()}
-              className="py-2 px-3 rounded-xl bg-white border border-stone-200 hover:bg-stone-100 text-[#1B1917] text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+              className="py-2 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700 text-[#1B1917] dark:text-stone-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
             >
-              <Printer className="w-3.5 h-3.5 text-stone-600" />
+              <Printer className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
               <span>Print / PDF</span>
             </button>
 
             <button
               type="button"
               onClick={handleExportFormattedExcel}
-              className="py-2 px-4 rounded-xl bg-[#216E39] hover:bg-[#1B592E] text-white text-xs font-black flex items-center gap-2 shadow-md cursor-pointer transition-all active:scale-95"
+              className="py-2 px-4 rounded-xl bg-[#216E39] hover:bg-[#1B592E] dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white text-xs font-black flex items-center gap-2 shadow-md cursor-pointer transition-all active:scale-95"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
               <span>Download Formatted Excel (.xls)</span>

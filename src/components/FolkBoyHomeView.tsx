@@ -138,7 +138,7 @@ export default function FolkBoyHomeView() {
       {/* FOLK LEAD ACTION HUB (Export Reports & Late Sadhana Approvals) */}
       {/* "folk Lead will also have same view like this folk boy, but this request and export things will also go to him ... (that's the onlly thing)" */}
       {isLead && (
-        <div className="mb-3.5 p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-300/80 shadow-2xs">
+        <div className="mb-3.5 p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border border-amber-300/80 dark:border-stone-700/80 shadow-2xs">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-black uppercase tracking-wider text-[#9C4507] flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#E07A2B]" />
@@ -192,7 +192,7 @@ export default function FolkBoyHomeView() {
 
       {/* Dynamic Personalized Reminder Banner (Only shown if pending & not dismissed) */}
       {!todaySadhanaSubmitted && reminder && (
-        <div className="glass-surface-elevated p-3.5 rounded-[22px] mb-3.5 border border-amber-200/70 bg-gradient-to-r from-amber-50/90 to-orange-50/70 relative transition-all">
+        <div className="glass-surface-elevated p-3.5 rounded-[22px] mb-3.5 border border-amber-200/70 dark:border-stone-700 bg-gradient-to-r from-amber-50/90 to-orange-50/70 dark:from-[#26201B] dark:to-[#1E1916] relative transition-all">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-[#E07A2B] text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
               <Bell className="w-4 h-4 animate-bounce" />
@@ -279,7 +279,7 @@ export default function FolkBoyHomeView() {
       <section className="mb-4">
         {!todaySadhanaSubmitted ? (
           /* UNFILLED STATE: Prominent "Fill Today's Sādhana" Hero Button */
-          <div className="glass-surface-elevated p-5 rounded-[28px] relative overflow-hidden shadow-lg border-2 border-amber-300/80 bg-gradient-to-br from-amber-50/90 via-white to-orange-50/70">
+          <div className="glass-surface-elevated p-5 rounded-[28px] relative overflow-hidden shadow-lg border-2 border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-br from-amber-50/90 via-white to-orange-50/70 dark:from-[#26201B] dark:via-[#1E1916] dark:to-[#171412]">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-[#9C4507] text-[10px] font-extrabold uppercase tracking-wider mb-1">

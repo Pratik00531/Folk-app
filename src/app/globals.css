@@ -266,6 +266,15 @@ body.dark {
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
 }
 
+.dark .from-emerald-50,
+.dark .from-emerald-50\/70,
+.dark .from-emerald-50\/80,
+.dark .from-emerald-50\/90 {
+  --tw-gradient-from: #13241B var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(19 36 27 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
 .dark .via-white {
   --tw-gradient-stops: var(--tw-gradient-from), #1E1A17 var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
 }
@@ -278,6 +287,27 @@ body.dark {
 .dark .to-orange-500\/5,
 .dark .to-amber-500\/5 {
   --tw-gradient-to: #1C1815 var(--tw-gradient-to-position) !important;
+}
+
+.dark .to-teal-50,
+.dark .to-teal-50\/70,
+.dark .to-teal-50\/80,
+.dark .to-teal-50\/90 {
+  --tw-gradient-to: #112019 var(--tw-gradient-to-position) !important;
+}
+
+.dark .bg-gradient-to-r.from-emerald-50,
+.dark .bg-gradient-to-r.from-emerald-50\/70,
+.dark .from-emerald-50 {
+  background-image: linear-gradient(to right, #13241B, #17221E) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+.dark .bg-gradient-to-r.from-amber-50,
+.dark .bg-gradient-to-tr.from-amber-50,
+.dark .bg-gradient-to-br.from-amber-50 {
+  background-image: linear-gradient(to bottom right, #26201B, #1C1815) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
 }
 
 .dark .bg-amber-50\/90,
