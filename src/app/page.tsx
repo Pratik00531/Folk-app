@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AppProvider, useApp } from '@/context/AppContext';
 import SplashView from '@/components/SplashView';
 import WelcomeView from '@/components/WelcomeView';
@@ -53,35 +53,8 @@ function MainContent() {
     }
   }, []);
 
-  // Native Android Hardware Back Button & Gesture Handler
-  useEffect(() => {
-    let handler: any;
-    import('@capacitor/app')
-      .then(({ App }) => {
-        handler = App.addListener('backButton', () => {
-          if (isLogModalOpen) {
-            closeLogModal();
-          } else if (isProfileModalOpen) {
-            setIsProfileModalOpen(false);
-          } else if (isPointsModalOpen) {
-            setIsPointsModalOpen(false);
-          } else if (isExportModalOpen) {
-            setIsExportModalOpen(false);
-          } else if (currentScreen === 'signup' || currentScreen === 'login') {
-            setScreen('welcome');
-          } else {
-            App.exitApp();
-          }
-        });
-      })
-      .catch(() => {});
-
-    return () => {
-      if (handler && typeof handler.remove === 'function') {
-        handler.remove();
-      }
-    };
-  }, [
+  // Keep refs for current state so back button listener doesn't need to be recreated on every state change
+  const stateRef = useRef({
     isLogModalOpen,
     closeLogModal,
     isProfileModalOpen,
@@ -92,7 +65,72 @@ function MainContent() {
     setIsExportModalOpen,
     currentScreen,
     setScreen,
-  ]);
+  });
+
+  useEffect(() => {
+    stateRef.current = {
+      isLogModalOpen,
+      closeLogModal,
+      isProfileModalOpen,
+      setIsProfileModalOpen,
+      isPointsModalOpen,
+      setIsPointsModalOpen,
+      isExportModalOpen,
+      setIsExportModalOpen,
+      currentScreen,
+      setScreen,
+    };
+  });
+
+  // Native Android Hardware Back Button & Gesture Handler (Native only)
+  useEffect(() => {
+    let removeListener: (() => void) | null = null;
+
+    const setupListener = async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (!Capacitor.isNativePlatform()) return;
+
+        const { App } = await import('@capacitor/app');
+        const listener = await App.addListener('backButton', () => {
+          const s = stateRef.current;
+          if (s.isLogModalOpen) {
+            s.closeLogModal();
+          } else if (s.isProfileModalOpen) {
+            s.setIsProfileModalOpen(false);
+          } else if (s.isPointsModalOpen) {
+            s.setIsPointsModalOpen(false);
+          } else if (s.isExportModalOpen) {
+            s.setIsExportModalOpen(false);
+          } else if (s.currentScreen === 'signup' || s.currentScreen === 'login') {
+            s.setScreen('welcome');
+          } else {
+            App.exitApp();
+          }
+        });
+
+        removeListener = () => {
+          try {
+            if (listener && typeof listener.remove === 'function') {
+              listener.remove();
+            }
+          } catch {
+            // ignore cleanup errors
+          }
+        };
+      } catch {
+        // Not running in capacitor or plugin unavailable
+      }
+    };
+
+    setupListener();
+
+    return () => {
+      if (removeListener) {
+        removeListener();
+      }
+    };
+  }, []);
 
   const isGuide = currentUser.role === 'folk_guide';
 
