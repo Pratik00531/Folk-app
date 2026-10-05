@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --bg-cream: #F8F6F0;
   --bg-cream-soft: #FAF9F5;
@@ -250,6 +252,44 @@ body.dark {
 .dark .bg-\[\#FAF5EE\]\/80 {
   background-color: #1A1715 !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Dark Mode Gradient Variable Overrides */
+.dark .from-amber-50,
+.dark .from-amber-50\/90,
+.dark .from-orange-50,
+.dark .from-orange-50\/90,
+.dark .from-amber-500\/10,
+.dark .from-amber-500\/15 {
+  --tw-gradient-from: #26211D var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(38 33 29 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.dark .via-white {
+  --tw-gradient-stops: var(--tw-gradient-from), #1E1A17 var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.dark .to-orange-50,
+.dark .to-orange-50\/70,
+.dark .to-orange-50\/60,
+.dark .to-amber-50,
+.dark .to-amber-50\/70,
+.dark .to-orange-500\/5,
+.dark .to-amber-500\/5 {
+  --tw-gradient-to: #1C1815 var(--tw-gradient-to-position) !important;
+}
+
+.dark .bg-amber-50\/90,
+.dark .bg-amber-50\/80,
+.dark .bg-amber-50\/70,
+.dark .bg-amber-100\/90,
+.dark .bg-amber-100\/80,
+.dark .bg-orange-50\/70,
+.dark .bg-orange-50\/80,
+.dark .bg-orange-50\/90 {
+  background-color: #28221D !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
 }
 
 .dark .bg-stone-50,

@@ -169,18 +169,18 @@ export default function ProfileModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-black/70 backdrop-blur-md transition-all">
-      <div className="relative w-full max-w-md max-h-[92vh] flex flex-col rounded-[30px] bg-white text-[#1B1917] shadow-2xl border border-stone-200/80 overflow-hidden">
+      <div className="relative w-full max-w-md max-h-[92vh] flex flex-col rounded-[30px] bg-white dark:bg-[#1C1816] text-[#1B1917] dark:text-[#F5F5F4] shadow-2xl border border-stone-200/80 dark:border-stone-800 overflow-hidden">
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-stone-200/60 flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent">
+        <div className="px-5 py-4 border-b border-stone-200/60 dark:border-stone-800 flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#E07A2B] text-white flex items-center justify-center shadow-xs">
               <User className="w-4.5 h-4.5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-[#1B1917] leading-tight">
+              <h2 className="text-base font-extrabold text-[#1B1917] dark:text-stone-100 leading-tight">
                 Devotee Profile
               </h2>
-              <span className="text-[11px] text-[#786E65]">
+              <span className="text-[11px] text-[#786E65] dark:text-stone-400">
                 Manage personal details & view mode
               </span>
             </div>
@@ -189,7 +189,7 @@ export default function ProfileModal() {
           <button
             type="button"
             onClick={() => setIsProfileModalOpen(false)}
-            className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-[#786E65] hover:text-[#1B1917] transition-all cursor-pointer"
+            className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 flex items-center justify-center text-[#786E65] hover:text-[#1B1917] dark:text-stone-300 dark:hover:text-white transition-all cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -206,7 +206,7 @@ export default function ProfileModal() {
           )}
 
           {/* User Hero Badge & Photo Update */}
-          <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-amber-50 to-orange-50/70 border border-amber-200/70 flex items-center gap-3.5">
+          <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-amber-50 to-orange-50/70 dark:from-[#26211D] dark:to-[#1C1815] border border-amber-200/70 dark:border-stone-700 flex items-center gap-3.5">
             {/* Clickable Profile Avatar with Camera Icon */}
             <div className="relative group shrink-0">
               <div
@@ -214,7 +214,7 @@ export default function ProfileModal() {
                 className="relative w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-[#E07A2B] to-[#E5A93C] shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all"
                 title="Tap to update your profile photo"
               >
-                <div className="w-full h-full rounded-full bg-white overflow-hidden flex items-center justify-center">
+                <div className="w-full h-full rounded-full bg-white dark:bg-stone-800 overflow-hidden flex items-center justify-center">
                   <img
                     src={avatarPreview || currentUser.avatar_url || '/assets/images/Chanting.png'}
                     alt={currentUser.full_name}
@@ -222,7 +222,7 @@ export default function ProfileModal() {
                   />
                 </div>
                 {/* Camera Badge Overlay */}
-                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#E07A2B] text-white flex items-center justify-center shadow-md border-2 border-white">
+                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#E07A2B] text-white flex items-center justify-center shadow-md border-2 border-white dark:border-stone-800">
                   <Camera className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -236,16 +236,16 @@ export default function ProfileModal() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-extrabold text-sm text-[#1B1917]">
+                <span className="font-extrabold text-sm text-[#1B1917] dark:text-stone-100">
                   {fullName || currentUser.full_name}
                 </span>
                 <span
                   className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
                     currentUser.role === 'folk_lead'
-                      ? 'bg-amber-100 text-[#9C4507] border border-amber-300'
+                      ? 'bg-amber-100 text-[#9C4507] dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50'
                       : currentUser.role === 'folk_guide'
-                      ? 'bg-stone-900 text-white'
-                      : 'bg-white text-[#786E65] border border-stone-200'
+                      ? 'bg-stone-900 dark:bg-stone-800 text-white'
+                      : 'bg-white dark:bg-stone-800 text-[#786E65] dark:text-stone-300 border border-stone-200 dark:border-stone-700'
                   }`}
                 >
                   {currentUser.role === 'folk_lead'
@@ -256,12 +256,12 @@ export default function ProfileModal() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[#786E65]">
-                <span className="font-mono font-semibold bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+              <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[#786E65] dark:text-stone-400">
+                <span className="font-mono font-semibold bg-white/80 dark:bg-stone-800 px-1.5 py-0.5 rounded border border-stone-200 dark:border-stone-700 text-[#786E65] dark:text-stone-300">
                   {currentUser.folk_id}
                 </span>
-                <span className="flex items-center gap-1 text-[#E07A2B] font-bold">
-                  <Flame className="w-3 h-3 text-[#E07A2B]" />
+                <span className="flex items-center gap-1 text-[#E07A2B] dark:text-amber-400 font-bold">
+                  <Flame className="w-3 h-3 text-[#E07A2B] dark:text-amber-400" />
                   {streak.current_reporting_streak}d Streak
                 </span>
               </div>
@@ -269,7 +269,7 @@ export default function ProfileModal() {
           </div>
 
           {/* VIEW MODE TOGGLE (Dark / Light Theme) */}
-          <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/70">
+          <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-[#221E1B] border border-stone-200/70 dark:border-stone-800">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 {theme === 'dark' ? (
@@ -277,11 +277,11 @@ export default function ProfileModal() {
                 ) : (
                   <Sun className="w-4 h-4 text-[#E07A2B]" />
                 )}
-                <span className="text-xs font-extrabold text-[#1B1917]">
+                <span className="text-xs font-extrabold text-[#1B1917] dark:text-stone-100">
                   View Mode (Theme)
                 </span>
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#786E65]">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#786E65] dark:text-stone-400">
                 {theme === 'dark' ? 'Dark Theme' : 'Light Theme'}
               </span>
             </div>
@@ -293,7 +293,7 @@ export default function ProfileModal() {
                 className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   theme === 'light'
                     ? 'bg-white text-[#E07A2B] border-[#E07A2B] shadow-2xs'
-                    : 'bg-white/60 text-[#786E65] border-stone-200 hover:bg-white'
+                    : 'bg-white/60 dark:bg-stone-800/60 text-[#786E65] dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800'
                 }`}
               >
                 <Sun className="w-3.5 h-3.5" />
@@ -306,7 +306,7 @@ export default function ProfileModal() {
                 className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   theme === 'dark'
                     ? 'bg-[#1C1917] text-amber-300 border-amber-400/80 shadow-2xs'
-                    : 'bg-white/60 text-[#786E65] border-stone-200 hover:bg-white'
+                    : 'bg-white/60 dark:bg-stone-800/60 text-[#786E65] dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800'
                 }`}
               >
                 <Moon className="w-3.5 h-3.5" />
@@ -317,13 +317,13 @@ export default function ProfileModal() {
 
           {/* EDITABLE PERSONAL DETAILS */}
           <div className="space-y-3">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#786E65]">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#786E65] dark:text-stone-400">
               Personal Information
             </h3>
 
             {/* Name */}
             <div>
-              <label className="text-[11px] font-bold text-[#2C2825] block mb-1">
+              <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 block mb-1">
                 Your Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -333,16 +333,16 @@ export default function ProfileModal() {
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Radheshyam Patel"
                   required
-                  className="w-full h-10 px-3 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-[#1B1917] focus:border-[#E07A2B] outline-none"
+                  className="w-full h-10 px-3 rounded-xl bg-white dark:bg-stone-800/90 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-[#1B1917] dark:text-stone-100 focus:border-[#E07A2B] outline-none"
                 />
               </div>
             </div>
 
             {/* 10-Digit Mobile Number (Strict Validation) */}
             <div>
-              <label className="text-[11px] font-bold text-[#2C2825] flex items-center justify-between mb-1">
+              <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 flex items-center justify-between mb-1">
                 <span>10-Digit Mobile Number <span className="text-red-500">*</span></span>
-                <span className="text-[10px] text-[#786E65]">{phone.length}/10 digits</span>
+                <span className="text-[10px] text-[#786E65] dark:text-stone-400">{phone.length}/10 digits</span>
               </label>
               <div className="relative">
                 <input
@@ -352,17 +352,17 @@ export default function ProfileModal() {
                   onChange={(e) => handlePhoneChange(e.target.value)}
                   placeholder="e.g. 9876543210"
                   required
-                  className={`w-full h-10 px-3 rounded-xl bg-white border text-xs font-semibold outline-none transition-all ${
+                  className={`w-full h-10 px-3 rounded-xl bg-white dark:bg-stone-800/90 border text-xs font-semibold outline-none transition-all ${
                     phoneError
                       ? 'border-red-500 text-red-700 bg-red-50/20'
                       : phone.length === 10
-                      ? 'border-emerald-500 text-[#1B1917]'
-                      : 'border-stone-200 text-[#1B1917] focus:border-[#E07A2B]'
+                      ? 'border-emerald-500 text-[#1B1917] dark:text-stone-100'
+                      : 'border-stone-200 dark:border-stone-700 text-[#1B1917] dark:text-stone-100 focus:border-[#E07A2B]'
                   }`}
                 />
               </div>
               {phoneError && (
-                <span className="text-[10px] text-red-600 font-semibold block mt-1">
+                <span className="text-[10px] text-red-600 dark:text-red-400 font-semibold block mt-1">
                   {phoneError}
                 </span>
               )}
@@ -370,7 +370,7 @@ export default function ProfileModal() {
 
             {/* Email Address */}
             <div>
-              <label className="text-[11px] font-bold text-[#2C2825] block mb-1">
+              <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 block mb-1">
                 Email Address <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -380,14 +380,14 @@ export default function ProfileModal() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. radheshyam@folk.org"
                   required
-                  className="w-full h-10 px-3 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-[#1B1917] focus:border-[#E07A2B] outline-none"
+                  className="w-full h-10 px-3 rounded-xl bg-white dark:bg-stone-800/90 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-[#1B1917] dark:text-stone-100 focus:border-[#E07A2B] outline-none"
                 />
               </div>
             </div>
 
             {/* College or Profession */}
             <div>
-              <label className="text-[11px] font-bold text-[#2C2825] block mb-1">
+              <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 block mb-1">
                 College / Organization / Profession
               </label>
               <div className="relative">
@@ -396,20 +396,20 @@ export default function ProfileModal() {
                   value={profession}
                   onChange={(e) => setProfession(e.target.value)}
                   placeholder="e.g. B.Tech Computer Science, IIT Bombay"
-                  className="w-full h-10 px-3 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-[#1B1917] focus:border-[#E07A2B] outline-none"
+                  className="w-full h-10 px-3 rounded-xl bg-white dark:bg-stone-800/90 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-[#1B1917] dark:text-stone-100 focus:border-[#E07A2B] outline-none"
                 />
               </div>
             </div>
 
             {/* Daily Chanting Commitment */}
             <div>
-              <label className="text-[11px] font-bold text-[#2C2825] block mb-1">
+              <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 block mb-1">
                 Daily Japa Chanting Commitment (Rounds)
               </label>
               <select
                 value={chantingCommitment}
                 onChange={(e) => setChantingCommitment(Number(e.target.value))}
-                className="w-full h-10 px-3 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-[#1B1917] focus:border-[#E07A2B] outline-none cursor-pointer"
+                className="w-full h-10 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-semibold text-[#1B1917] dark:text-stone-100 focus:border-[#E07A2B] outline-none cursor-pointer"
               >
                 <option value={16}>16 Rounds Daily (Full Vow)</option>
                 <option value={8}>8 Rounds Daily</option>
@@ -420,26 +420,26 @@ export default function ProfileModal() {
             </div>
 
             {/* Assigned Guide Information */}
-            <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/60 text-[11px] flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/60 dark:border-stone-700 text-[11px] flex items-center justify-between">
               <div>
-                <span className="text-[#786E65] block">Assigned FOLK Guide:</span>
-                <span className="font-extrabold text-[#1B1917]">
+                <span className="text-[#786E65] dark:text-stone-400 block">Assigned FOLK Guide:</span>
+                <span className="font-extrabold text-[#1B1917] dark:text-stone-100">
                   {currentUser.guide_name || 'Assigned Temple Guide'}
                 </span>
               </div>
-              <span className="text-[10px] font-bold text-[#216E39] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-[10px] font-bold text-[#216E39] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
                 Active Guide
               </span>
             </div>
 
             {/* App Version & In-App Auto Update Checker */}
-            <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/5 border border-amber-200/60 text-[11px] flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/5 border border-amber-200/60 dark:border-stone-700 text-[11px] flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-1.5 font-bold text-[#1B1917]">
+                <div className="flex items-center gap-1.5 font-bold text-[#1B1917] dark:text-stone-100">
                   <DownloadCloud className="w-3.5 h-3.5 text-[#E07A2B]" />
                   <span>FOLK Sādhana v{CURRENT_APP_VERSION}</span>
                 </div>
-                <span className="text-[10px] text-[#786E65] block mt-0.5">
+                <span className="text-[10px] text-[#786E65] dark:text-stone-400 block mt-0.5">
                   {updateStatus || 'Production PWA • Up to date'}
                 </span>
               </div>
@@ -447,7 +447,7 @@ export default function ProfileModal() {
                 type="button"
                 onClick={handleCheckUpdate}
                 disabled={checkingUpdate}
-                className="px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-[#8C460D] text-[10px] font-bold hover:bg-stone-50 shadow-2xs flex items-center gap-1 transition-all cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-[#8C460D] dark:text-amber-400 text-[10px] font-bold hover:bg-stone-50 dark:hover:bg-stone-700 shadow-2xs flex items-center gap-1 transition-all cursor-pointer"
               >
                 <RefreshCw className={`w-3 h-3 ${checkingUpdate ? 'animate-spin text-[#E07A2B]' : ''}`} />
                 <span>{checkingUpdate ? 'Checking...' : 'Check Update'}</span>
@@ -459,7 +459,7 @@ export default function ProfileModal() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="w-full h-10 rounded-xl bg-red-50 hover:bg-red-100/80 border border-red-200/60 text-red-600 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                className="w-full h-10 rounded-xl bg-red-50 hover:bg-red-100/80 dark:bg-red-950/40 dark:hover:bg-red-900/50 border border-red-200/60 dark:border-red-800/60 text-red-600 dark:text-red-400 text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Sign Out of Account</span>
@@ -472,7 +472,7 @@ export default function ProfileModal() {
             <button
               type="button"
               onClick={() => setIsProfileModalOpen(false)}
-              className="flex-1 h-11 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition-all cursor-pointer"
+              className="flex-1 h-11 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-bold transition-all cursor-pointer"
             >
               Cancel
             </button>

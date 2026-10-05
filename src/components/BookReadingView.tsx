@@ -142,9 +142,9 @@ export default function BookReadingView() {
             </button>
             <button
               onClick={() => setIsBacklogModalOpen(true)}
-              className="py-2.5 px-3 rounded-2xl bg-white border border-stone-200 text-[#1B1917] font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs hover:bg-stone-50 cursor-pointer transition-all"
+              className="py-2.5 px-3 rounded-2xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-[#1B1917] dark:text-stone-100 font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs hover:bg-stone-50 dark:hover:bg-stone-750 cursor-pointer transition-all"
             >
-              <BookmarkCheck className="w-3.5 h-3.5 text-[#DC6820]" />
+              <BookmarkCheck className="w-3.5 h-3.5 text-[#DC6820] dark:text-amber-400" />
               <span>Mark Past Books</span>
             </button>
           </div>
@@ -155,18 +155,18 @@ export default function BookReadingView() {
       <section className="glass-surface p-4.5 rounded-[28px] mb-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#DC6820]" />
-            <h2 className="text-sm font-extrabold text-[#1B1917]">
+            <Layers className="w-4 h-4 text-[#DC6820] dark:text-amber-400" />
+            <h2 className="text-sm font-extrabold text-[#1B1917] dark:text-stone-100">
               Ordered Reading Catalogue
             </h2>
           </div>
-          <span className="text-[11px] font-bold text-[#786E65]">
+          <span className="text-[11px] font-bold text-[#786E65] dark:text-stone-400">
             {folkBookCatalogue.length} Books
           </span>
         </div>
 
         {/* Level selector tabs (Levels 1 to 5) */}
-        <div className="flex gap-1 p-1 rounded-2xl bg-white/70 border border-white/90 shadow-2xs mb-3">
+        <div className="flex gap-1 p-1 rounded-2xl bg-white/70 dark:bg-stone-800/80 border border-white/90 dark:border-stone-700/80 shadow-2xs mb-3">
           {([1, 2, 3, 4, 5] as const).map((lvl) => (
             <button
               key={lvl}
@@ -174,7 +174,7 @@ export default function BookReadingView() {
               className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 selectedLevel === lvl
                   ? 'bg-[#DC6820] text-white shadow-2xs'
-                  : 'text-[#6E665E] hover:text-[#1B1917]'
+                  : 'text-[#6E665E] dark:text-stone-400 hover:text-[#1B1917] dark:hover:text-stone-200'
               }`}
             >
               Lvl {lvl}
@@ -183,7 +183,7 @@ export default function BookReadingView() {
         </div>
 
         {/* Level Description */}
-        <div className="text-[11px] font-medium text-[#786E65] mb-3 px-1">
+        <div className="text-[11px] font-medium text-[#786E65] dark:text-stone-400 mb-3 px-1">
           {selectedLevel === 1 && 'Foundational literature introducing the science of bhakti.'}
           {selectedLevel === 2 && 'Intermediate philosophy on yoga, soul, and detachment.'}
           {selectedLevel === 3 && 'Advanced discussions, science, and the purpose of life.'}
@@ -203,26 +203,26 @@ export default function BookReadingView() {
                 key={book.id}
                 className={`p-3 rounded-2xl border transition-all flex items-center justify-between ${
                   isCurrent
-                    ? 'bg-amber-50/90 border-[#DC6820]/40 shadow-xs'
-                    : 'bg-white/70 border-white/80 hover:bg-white'
+                    ? 'bg-amber-50/90 dark:bg-[#2A231C] border-[#DC6820]/40 dark:border-amber-600/50 shadow-xs'
+                    : 'bg-white/70 dark:bg-[#1E1916] border-white/80 dark:border-stone-800 hover:bg-white dark:hover:bg-[#25201D]'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   {/* Real Book Cover Thumbnail */}
-                  <div className="w-10 h-13 rounded-lg overflow-hidden border border-amber-900/15 shrink-0 bg-stone-100 shadow-2xs">
+                  <div className="w-10 h-13 rounded-lg overflow-hidden border border-amber-900/15 dark:border-stone-700 shrink-0 bg-stone-100 dark:bg-stone-800 shadow-2xs">
                     <img src={coverUrl} alt={book.title} className="w-full h-full object-cover" />
                   </div>
 
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-[#8E867F]">
+                      <span className="text-[10px] font-bold text-[#8E867F] dark:text-stone-400">
                         #{book.order}
                       </span>
-                      <h3 className="text-xs font-bold text-[#1B1917] leading-snug">
+                      <h3 className="text-xs font-bold text-[#1B1917] dark:text-stone-100 leading-snug">
                         {book.title}
                       </h3>
                     </div>
-                    <span className="text-[10px] text-[#786E65]">
+                    <span className="text-[10px] text-[#786E65] dark:text-stone-400">
                       {book.author}
                     </span>
                   </div>
@@ -230,18 +230,18 @@ export default function BookReadingView() {
 
                 <div>
                   {isCurrent ? (
-                    <span className="text-[10px] font-bold text-[#9C4507] bg-amber-100/90 px-2.5 py-1 rounded-lg">
+                    <span className="text-[10px] font-bold text-[#9C4507] dark:text-amber-300 bg-amber-100/90 dark:bg-amber-950/70 border border-transparent dark:border-amber-700/40 px-2.5 py-1 rounded-lg">
                       Active
                     </span>
                   ) : isCompleted ? (
-                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-2 py-1 rounded-lg flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100/90 dark:bg-emerald-950/60 border border-transparent dark:border-emerald-700/40 px-2 py-1 rounded-lg flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       Read
                     </span>
                   ) : (
                     <button
                       onClick={() => updateCurrentBook(book.id)}
-                      className="text-[10px] font-bold text-[#786E65] hover:text-[#DC6820] bg-white border border-stone-200/60 px-2.5 py-1 rounded-lg cursor-pointer"
+                      className="text-[10px] font-bold text-[#786E65] dark:text-stone-300 hover:text-[#DC6820] dark:hover:text-amber-400 bg-white dark:bg-stone-800 border border-stone-200/60 dark:border-stone-700 px-2.5 py-1 rounded-lg cursor-pointer"
                     >
                       Set Active
                     </button>
@@ -257,14 +257,14 @@ export default function BookReadingView() {
       <section className="glass-surface p-4.5 rounded-[28px]">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-[#2E7D32]" />
-            <h2 className="text-xs font-bold text-[#1B1917] uppercase tracking-wider">
+            <History className="w-4 h-4 text-[#2E7D32] dark:text-emerald-400" />
+            <h2 className="text-xs font-bold text-[#1B1917] dark:text-stone-100 uppercase tracking-wider">
               Completed Books Log
             </h2>
           </div>
           <button
             onClick={() => setIsBacklogModalOpen(true)}
-            className="text-[10px] font-bold text-[#DC6820] hover:underline cursor-pointer"
+            className="text-[10px] font-bold text-[#DC6820] dark:text-amber-400 hover:underline cursor-pointer"
           >
             + Add Past Book
           </button>
@@ -272,7 +272,7 @@ export default function BookReadingView() {
 
         <div className="space-y-2">
           {readingState.completed_books.length === 0 ? (
-            <div className="text-center py-4 text-xs text-[#8E867F]">
+            <div className="text-center py-4 text-xs text-[#8E867F] dark:text-stone-400">
               No completed books logged yet. Tap &apos;Mark Past Books&apos; to log your history!
             </div>
           ) : (
@@ -281,18 +281,18 @@ export default function BookReadingView() {
               return (
                 <div
                   key={b.book_id}
-                  className="p-2.5 rounded-xl bg-white/70 border border-white/80 flex items-center justify-between text-xs"
+                  className="p-2.5 rounded-xl bg-white/70 dark:bg-[#1E1916] border border-white/80 dark:border-stone-800 flex items-center justify-between text-xs"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-8 rounded overflow-hidden shrink-0 border border-stone-200">
+                    <div className="w-6 h-8 rounded overflow-hidden shrink-0 border border-stone-200 dark:border-stone-700">
                       <img src={coverUrl} alt={b.title} className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <span className="font-semibold text-[#1B1917] block leading-tight">{b.title}</span>
-                      <span className="text-[10px] text-[#8E867F]">Completed: {b.completed_at}</span>
+                      <span className="font-semibold text-[#1B1917] dark:text-stone-100 block leading-tight">{b.title}</span>
+                      <span className="text-[10px] text-[#8E867F] dark:text-stone-400">Completed: {b.completed_at}</span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/50">
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200/50 dark:border-emerald-700/50">
                     {Math.round(b.total_minutes / 60)} hrs read
                   </span>
                 </div>
