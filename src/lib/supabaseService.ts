@@ -623,11 +623,12 @@ export async function apiSimpleResetPassword(
 
   const clean = identifier.trim();
   const isEmail = clean.includes('@');
+  const normalized = isEmail ? clean : clean.replace(/\D/g, '').slice(-10);
 
   // 1. Try PostgreSQL stored procedure
   try {
     const { data, error } = await supabase.rpc('simple_reset_password', {
-      p_identifier: clean,
+      p_identifier: normalized,
       p_new_password: newPassword,
     });
 

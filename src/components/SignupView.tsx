@@ -84,7 +84,13 @@ export default function SignupView() {
 
   // Phone 10-digit validation check
   const handlePhoneChange = (val: string) => {
-    const cleaned = val.replace(/\D/g, '').slice(0, 10);
+    let cleaned = val.replace(/\D/g, '');
+    if (cleaned.length === 12 && cleaned.startsWith('91')) {
+      cleaned = cleaned.slice(2);
+    } else if (cleaned.length > 10 && cleaned.startsWith('0')) {
+      cleaned = cleaned.slice(1);
+    }
+    cleaned = cleaned.slice(0, 10);
     setPhone(cleaned);
     if (cleaned.length > 0 && cleaned.length < 10) {
       setPhoneError('Phone number must be exactly 10 digits');

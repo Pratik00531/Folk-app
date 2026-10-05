@@ -109,8 +109,11 @@ export default function LoginView() {
       setAuthError(null);
       setNoAccountFound(false);
       const trimmed = phone.trim();
+      const sanitizedIdentifier = trimmed.includes('@')
+        ? trimmed
+        : trimmed.replace(/\D/g, '').slice(0, 10);
 
-      const { error } = await signIn(trimmed, password);
+      const { error } = await signIn(sanitizedIdentifier, password);
       if (error) {
         setLoading(false);
         setNoAccountFound(true);
@@ -119,7 +122,7 @@ export default function LoginView() {
         if (isUnconfirmed) {
           setAuthError('Email not confirmed. Please check your inbox for the confirmation email or disable "Confirm email" in Supabase settings.');
         } else {
-          setAuthError(`No account found or incorrect password for "${trimmed}". First time logging in? Create your account below.`);
+          setAuthError(`No account found or incorrect password for "${sanitizedIdentifier}". First time logging in? Create your account below.`);
         }
         return;
       }
@@ -130,8 +133,21 @@ export default function LoginView() {
   };
 
   const handlePhoneChange = (val: string) => {
-    const formatted = val.includes('@') ? val : val.replace(/\D/g, '').slice(0, 10);
-    setPhone(formatted);
+    // If it looks like an email (has @ or starts with letters)
+    if (val.includes('@') || /^[a-zA-Z]/.test(val.trim())) {
+      setPhone(val.trim());
+    } else {
+      // Strictly digits 0-9 only. Completely strip +, -, spaces, letters, and symbols
+      let digitsOnly = val.replace(/\D/g, '');
+      // Handle pasted numbers with country code: +91XXXXXXXXXX or 91XXXXXXXXXX
+      if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+        digitsOnly = digitsOnly.slice(2);
+      } else if (digitsOnly.length > 10 && digitsOnly.startsWith('0')) {
+        digitsOnly = digitsOnly.slice(1);
+      }
+      // Hard cap at exactly 10 digits
+      setPhone(digitsOnly.slice(0, 10));
+    }
     setNoAccountFound(false);
     if (errors.phone) {
       setErrors((prev) => ({ ...prev, phone: undefined }));
@@ -290,9 +306,19 @@ export default function LoginView() {
             </div>
             <input
               type={phone.includes('@') ? 'email' : 'text'}
+              inputMode={phone.includes('@') ? 'email' : phone.length > 0 ? 'numeric' : 'text'}
+              maxLength={phone.includes('@') ? 100 : 10}
               value={phone}
               onChange={(e) => handlePhoneChange(e.target.value)}
-              placeholder="Enter mobile or email"
+              onKeyDown={(e) => {
+                // If entering phone number (not an email), block +, =, symbols immediately
+                if (!phone.includes('@') && !/^[a-zA-Z]/.test(phone)) {
+                  if (['+', '=', '-', '.', 'e', 'E', '/', '*', '#'].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                  }
+                }
+              }}
+              placeholder={phone.includes('@') ? 'Enter email address' : '10-digit mobile or email'}
               className={`w-full h-12 pr-10 rounded-2xl bg-white/90 border text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs transition-all ${
                 phone.includes('@') ? 'pl-10 font-sans' : 'pl-18 font-mono tracking-wider'
               } ${
