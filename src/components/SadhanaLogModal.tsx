@@ -24,6 +24,13 @@ import {
 } from 'lucide-react';
 import TimePickerAMPM from '@/components/TimePickerAMPM';
 import { getBookCoverUrl } from '@/lib/mockData';
+import {
+  getIndianTodayStr,
+  formatIndianDateLong,
+  isSundayDate,
+  isOlderThan3DaysIST,
+  getDaysDifference,
+} from '@/lib/dateUtils';
 
 // Authentic Lotus Emblem SVG
 function LotusIcon({ className = 'w-6 h-6 text-[#DC6820]' }: { className?: string }) {
@@ -82,20 +89,19 @@ export default function SadhanaLogModal() {
     readingState,
     setIsPointsModalOpen,
     setActiveFolkBoyTab,
+    todayStr,
   } = useApp();
 
+  const currentTodayStr = todayStr || getIndianTodayStr();
   const existingRecord = sadhanaRecords[selectedDateForModal] || null;
 
-  // 3-Day Lock Rule for late Sādhana submission
-  const todayDateObj = new Date(2026, 9, 3);
-  const dateParts = selectedDateForModal.split('-').map(Number);
-  const targetDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-  const diffDays = Math.round((todayDateObj.getTime() - targetDateObj.getTime()) / (1000 * 60 * 60 * 24));
-  const isOlderThan3Days = diffDays > 3;
+  // 3-Day Lock Rule for late Sādhana submission (IST)
+  const isOlderThan3Days = isOlderThan3DaysIST(selectedDateForModal, currentTodayStr);
+  const diffDays = Math.max(0, getDaysDifference(currentTodayStr, selectedDateForModal));
   const [lateReason, setLateReason] = useState<string>('Semester exams and temple seva');
 
   // Sunday identification: Darshan Ārati is enabled ONLY on Sundays!
-  const isSunday = new Date(selectedDateForModal).getDay() === 0;
+  const isSunday = isSundayDate(selectedDateForModal);
 
   // 1. Maṅgala Ārati
   const [mangalaAttended, setMangalaAttended] = useState<boolean>(true);
@@ -215,13 +221,8 @@ export default function SadhanaLogModal() {
 
   if (!isLogModalOpen) return null;
 
-  // Format date display: e.g. "Thu, 3 October 2026"
-  const formattedSubtitle = new Date(selectedDateForModal).toLocaleDateString('en-US', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  // Format date display: e.g. "Monday, 5 October 2026"
+  const formattedSubtitle = formatIndianDateLong(selectedDateForModal);
 
   const currentBookCover = getBookCoverUrl(readingState.current_book_title);
 
@@ -283,7 +284,7 @@ export default function SadhanaLogModal() {
     });
 
     // For today's Sādhana, close log modal immediately so Duolingo streak animation takes center stage!
-    if (selectedDateForModal === '2026-10-03') {
+    if (selectedDateForModal === currentTodayStr) {
       closeLogModal();
     } else {
       // Trigger celebration animation for past dates

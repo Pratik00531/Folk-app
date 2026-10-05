@@ -30,6 +30,7 @@ import PointRulesManagerModal from '@/components/PointRulesManagerModal';
 import SadhanaReportExportModal from '@/components/SadhanaReportExportModal';
 import ComparisonAnalyticsView from '@/components/ComparisonAnalyticsView';
 import { PillarDotStatus } from '@/types/database';
+import { formatIndianDayAndMonth, getIndianTodayStr, getIndianYesterdayStr } from '@/lib/dateUtils';
 
 function getDotColorClass(status: PillarDotStatus) {
   switch (status) {
@@ -88,6 +89,11 @@ export default function GuideDashboardView() {
   const [filterPeriod, setFilterPeriod] = useState<'today' | 'week' | 'month'>('today');
   // Day filter for daily view: default to 'yesterday' as requested!
   const [activeDayView, setActiveDayView] = useState<'yesterday' | 'today'>('yesterday');
+
+  const todayStr = getIndianTodayStr();
+  const yesterdayStr = getIndianYesterdayStr();
+  const todayLabel = formatIndianDayAndMonth(todayStr);
+  const yesterdayLabel = formatIndianDayAndMonth(yesterdayStr);
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [reminderToast, setReminderToast] = useState<{ count: number; names: string[] } | null>(null);
@@ -492,7 +498,7 @@ export default function GuideDashboardView() {
             }`}
           >
             <Clock className="w-3 h-3 text-[#E07A2B]" />
-            <span>Yesterday (2 Oct) · Default</span>
+            <span>Yesterday ({yesterdayLabel}) · Default</span>
           </button>
 
           <button
@@ -504,7 +510,7 @@ export default function GuideDashboardView() {
                 : 'text-[#786E65] hover:text-[#1B1917]'
             }`}
           >
-            <span>Today (3 Oct) · Live</span>
+            <span>Today ({todayLabel}) · Live</span>
           </button>
         </div>
       )}

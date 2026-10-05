@@ -25,6 +25,7 @@ import {
 import SadhanaHeatmap from '@/components/SadhanaHeatmap';
 import ComparisonAnalyticsView from '@/components/ComparisonAnalyticsView';
 import SadhanaReportExportModal from '@/components/SadhanaReportExportModal';
+import { formatIndianDateShort, formatIndianDateLong, isSundayDate } from '@/lib/dateUtils';
 
 export default function FolkBoyHomeView() {
   const {
@@ -32,6 +33,7 @@ export default function FolkBoyHomeView() {
     streak,
     todaySadhanaSubmitted,
     todayRecord,
+    todayStr,
     reminder,
     dismissReminder,
     openLogModal,
@@ -53,11 +55,11 @@ export default function FolkBoyHomeView() {
   const isLead = currentUser.role === 'folk_lead';
   const pendingApprovals = approvalRequests.filter((r) => r.status === 'pending');
 
-  // Dynamic day and date formatting (e.g. 3 Oct, Sat)
-  const todayDateFormatted = '3 Oct, Sat';
+  // Dynamic day and date formatting (e.g. 5 Oct, Mon)
+  const todayDateFormatted = formatIndianDateShort(todayStr);
 
-  // Check if today is Sunday
-  const isSunday = new Date().getDay() === 0;
+  // Check if today is Sunday (IST)
+  const isSunday = isSundayDate(todayStr);
 
   // Calculate completion percentage and count (5 pillars on weekdays, 6 on Sunday)
   let completedCount = 0;
@@ -125,7 +127,7 @@ export default function FolkBoyHomeView() {
         >
           <Calendar className="w-3.5 h-3.5 text-[#E07A2B]" />
           <span className="text-xs font-bold text-[#1B1917]">
-            {todayRecord ? `${todayRecord.points_earned}/100 pts` : 'Oct 2026'}
+            {todayRecord ? `${todayRecord.points_earned}/100 pts` : todayDateFormatted}
           </span>
           <ChevronRight className="w-3 h-3 text-[#8E867F]" />
         </button>
@@ -288,7 +290,7 @@ export default function FolkBoyHomeView() {
                   Today&apos;s Sādhana
                 </h1>
                 <p className="text-xs text-[#786E65] mt-0.5">
-                  Saturday, 3 October 2026 · Keep your streak burning!
+                  {formatIndianDateLong(todayStr)} · Keep your streak burning!
                 </p>
               </div>
 

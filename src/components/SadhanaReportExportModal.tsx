@@ -17,6 +17,14 @@ import {
   BookOpen,
   Filter,
 } from 'lucide-react';
+import {
+  getIndianTodayStr,
+  parseDateParts,
+  addDaysToDateStr,
+  getDaysDifference,
+  getMonthConfig,
+  formatIndianDayAndMonth,
+} from '@/lib/dateUtils';
 
 interface SadhanaReportExportModalProps {
   isOpen: boolean;
@@ -26,49 +34,53 @@ interface SadhanaReportExportModalProps {
 export type ExportScope = 'week' | 'month' | 'custom';
 
 export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaReportExportModalProps) {
-  const { guideDevotees, sadhanaRecords, currentUser } = useApp();
+  const { guideDevotees, sadhanaRecords, currentUser, todayStr } = useApp();
+
+  const currentTodayStr = todayStr || getIndianTodayStr();
+  const [currentYear, currentMonthIndex] = parseDateParts(currentTodayStr);
+
+  const prevMonthIndex = currentMonthIndex === 0 ? 11 : currentMonthIndex - 1;
+  const prevYear = currentMonthIndex === 0 ? currentYear - 1 : currentYear;
+  const currentMonthConfig = getMonthConfig(currentYear, currentMonthIndex, currentTodayStr);
+  const prevMonthConfig = getMonthConfig(prevYear, prevMonthIndex, currentTodayStr);
 
   const [scope, setScope] = useState<ExportScope>('month');
-  const [selectedMonth, setSelectedMonth] = useState<'oct' | 'sep'>('oct');
-  const [customStartDate, setCustomStartDate] = useState<string>('2026-09-20');
-  const [customEndDate, setCustomEndDate] = useState<string>('2026-10-03');
+  const [selectedMonth, setSelectedMonth] = useState<'current' | 'prev'>('current');
+  const [customStartDate, setCustomStartDate] = useState<string>(addDaysToDateStr(currentTodayStr, -14));
+  const [customEndDate, setCustomEndDate] = useState<string>(currentTodayStr);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
-  // Compute date range metadata based on scope with NaN protection
+  // Compute date range metadata based on scope with live Indian Standard Time (IST)
   const dateRangeInfo = useMemo(() => {
     if (scope === 'week') {
+      const weekStart = addDaysToDateStr(currentTodayStr, -6);
       return {
-        label: 'This Week (27 Sep – 3 Oct 2026)',
+        label: `This Week (${formatIndianDayAndMonth(weekStart)} – ${formatIndianDayAndMonth(currentTodayStr)} ${currentYear})`,
         daysCount: 7,
-        startDate: '2026-09-27',
-        endDate: '2026-10-03',
+        startDate: weekStart,
+        endDate: currentTodayStr,
       };
     }
     if (scope === 'month') {
-      if (selectedMonth === 'oct') {
+      if (selectedMonth === 'current') {
         return {
-          label: 'October 2026 (Full Month)',
-          daysCount: 31,
-          startDate: '2026-10-01',
-          endDate: '2026-10-31',
+          label: `${currentMonthConfig.label} (Current Month)`,
+          daysCount: currentMonthConfig.daysCount,
+          startDate: `${currentMonthConfig.prefix}-01`,
+          endDate: `${currentMonthConfig.prefix}-${String(currentMonthConfig.daysCount).padStart(2, '0')}`,
         };
       }
       return {
-        label: 'September 2026 (Past Month)',
-        daysCount: 30,
-        startDate: '2026-09-01',
-        endDate: '2026-09-30',
+        label: `${prevMonthConfig.label} (Past Month)`,
+        daysCount: prevMonthConfig.daysCount,
+        startDate: `${prevMonthConfig.prefix}-01`,
+        endDate: `${prevMonthConfig.prefix}-${String(prevMonthConfig.daysCount).padStart(2, '0')}`,
       };
     }
     // Custom range with fallback if empty
-    const sDate = customStartDate || '2026-09-20';
-    const eDate = customEndDate || '2026-10-03';
-    const start = new Date(sDate);
-    const end = new Date(eDate);
-    const startTime = isNaN(start.getTime()) ? new Date('2026-09-20').getTime() : start.getTime();
-    const endTime = isNaN(end.getTime()) ? new Date('2026-10-03').getTime() : end.getTime();
-    const diffTime = Math.max(0, endTime - startTime);
-    const daysCount = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    const sDate = customStartDate || addDaysToDateStr(currentTodayStr, -14);
+    const eDate = customEndDate || currentTodayStr;
+    const daysCount = Math.max(1, getDaysDifference(eDate, sDate) + 1);
 
     return {
       label: `Custom Range (${sDate} to ${eDate})`,
@@ -76,7 +88,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
       startDate: sDate,
       endDate: eDate,
     };
-  }, [scope, selectedMonth, customStartDate, customEndDate]);
+  }, [scope, selectedMonth, customStartDate, customEndDate, currentTodayStr, currentYear, currentMonthConfig, prevMonthConfig]);
 
   // Dynamically compute devotee averages for the selected period
   const devoteeReport = useMemo(() => {
@@ -420,25 +432,25 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                 <span className="text-[11px] font-bold text-[#2C2825]">Month:</span>
                 <button
                   type="button"
-                  onClick={() => setSelectedMonth('oct')}
+                  onClick={() => setSelectedMonth('current')}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    selectedMonth === 'oct'
+                    selectedMonth === 'current'
                       ? 'bg-emerald-100 text-[#15803D] border border-emerald-300'
                       : 'bg-white text-[#786E65] border border-stone-200'
                   }`}
                 >
-                  October 2026 (Current)
+                  {currentMonthConfig.label} (Current)
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedMonth('sep')}
+                  onClick={() => setSelectedMonth('prev')}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    selectedMonth === 'sep'
+                    selectedMonth === 'prev'
                       ? 'bg-emerald-100 text-[#15803D] border border-emerald-300'
                       : 'bg-white text-[#786E65] border border-stone-200'
                   }`}
                 >
-                  September 2026 (Last Month)
+                  {prevMonthConfig.label} (Last Month)
                 </button>
               </div>
             )}

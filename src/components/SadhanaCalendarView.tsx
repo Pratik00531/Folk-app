@@ -19,19 +19,14 @@ import {
   Hourglass,
 } from 'lucide-react';
 
-interface CalendarMonthConfig {
-  id: 'sep' | 'oct';
-  label: string;
-  year: number;
-  monthIndex: number; // 8 for Sep, 9 for Oct
-  daysCount: number;
-  prefix: string;
-}
-
-const CALENDAR_MONTHS: CalendarMonthConfig[] = [
-  { id: 'sep', label: 'September 2026', year: 2026, monthIndex: 8, daysCount: 30, prefix: '2026-09' },
-  { id: 'oct', label: 'October 2026', year: 2026, monthIndex: 9, daysCount: 31, prefix: '2026-10' },
-];
+import {
+  getIndianTodayStr,
+  parseDateParts,
+  isOlderThan3DaysIST,
+  getMonthConfig,
+  getMonthStartDayOfWeek,
+  DynamicMonthConfig,
+} from '@/lib/dateUtils';
 
 export default function SadhanaCalendarView() {
   const {
@@ -42,16 +37,23 @@ export default function SadhanaCalendarView() {
     setActiveFolkBoyTab,
     approvalRequests,
     setIsProfileModalOpen,
+    todayStr,
   } = useApp();
 
-  // Active month: default to current month (October 2026)
-  const [activeMonthId, setActiveMonthId] = useState<'sep' | 'oct'>('oct');
-  const activeMonth = CALENDAR_MONTHS.find((m) => m.id === activeMonthId) || CALENDAR_MONTHS[1];
+  // Mobile/device date configuration linked with live Indian Standard Time (IST / Gujarat)
+  const todayDateStr = todayStr || getIndianTodayStr();
+  const [currentYear, currentMonthIndex, currentDayNum] = parseDateParts(todayDateStr);
 
-  // Mobile/device date configuration:
-  // Today is Day 3 of October 2026 (Saturday, 3 October 2026)
-  const todayDateStr = '2026-10-03';
-  const [selectedDay, setSelectedDay] = useState<number>(activeMonthId === 'oct' ? 3 : 30);
+  // Month configs for current month and previous month
+  const prevMonthIndex = currentMonthIndex === 0 ? 11 : currentMonthIndex - 1;
+  const prevYear = currentMonthIndex === 0 ? currentYear - 1 : currentYear;
+  const prevMonthConfig = getMonthConfig(prevYear, prevMonthIndex, todayDateStr);
+  const currentMonthConfig = getMonthConfig(currentYear, currentMonthIndex, todayDateStr);
+
+  const [activeMonthKey, setActiveMonthKey] = useState<'prev' | 'current'>('current');
+  const activeMonth = activeMonthKey === 'prev' ? prevMonthConfig : currentMonthConfig;
+
+  const [selectedDay, setSelectedDay] = useState<number>(currentDayNum);
 
   const selectedDateStr = `${activeMonth.prefix}-${String(selectedDay).padStart(2, '0')}`;
   const dayRecord = sadhanaRecords[selectedDateStr] || null;
@@ -61,11 +63,7 @@ export default function SadhanaCalendarView() {
   const isSelectedDayFilled = Boolean(dayRecord && dayRecord.points_earned > 0);
 
   // 3-Day Lock Rule calculation
-  // Days difference from 2026-10-03
-  const todayDateObj = new Date(2026, 9, 3);
-  const targetDateObj = new Date(activeMonth.year, activeMonth.monthIndex, selectedDay);
-  const diffDays = Math.round((todayDateObj.getTime() - targetDateObj.getTime()) / (1000 * 60 * 60 * 24));
-  const isOlderThan3Days = diffDays > 3;
+  const isOlderThan3Days = isOlderThan3DaysIST(selectedDateStr, todayDateStr);
 
   // Check if there is a pending approval request for the selected date
   const pendingApproval = approvalRequests.find(
@@ -75,7 +73,7 @@ export default function SadhanaCalendarView() {
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Calculate start day padding
-  const startDayOfWeek = new Date(activeMonth.year, activeMonth.monthIndex, 1).getDay();
+  const startDayOfWeek = getMonthStartDayOfWeek(activeMonth.year, activeMonth.monthIndex);
   const paddingDays = Array.from({ length: startDayOfWeek });
 
   return (
@@ -107,37 +105,37 @@ export default function SadhanaCalendarView() {
         </div>
       </header>
 
-      {/* 2 Months Navigator Selector */}
+      {/* 2 Months Navigator Selector (Dynamic IST) */}
       <div className="flex items-center justify-between p-1 bg-stone-100/90 rounded-2xl mb-4 border border-stone-200/60">
         <button
           type="button"
           onClick={() => {
-            setActiveMonthId('sep');
-            setSelectedDay(30);
+            setActiveMonthKey('prev');
+            setSelectedDay(prevMonthConfig.daysCount);
           }}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-            activeMonthId === 'sep'
+            activeMonthKey === 'prev'
               ? 'bg-white text-[#1B1917] shadow-xs'
               : 'text-[#786E65] hover:text-[#1B1917]'
           }`}
         >
           <ChevronLeft className="w-3.5 h-3.5" />
-          <span>September 2026</span>
+          <span>{prevMonthConfig.label}</span>
         </button>
 
         <button
           type="button"
           onClick={() => {
-            setActiveMonthId('oct');
-            setSelectedDay(3);
+            setActiveMonthKey('current');
+            setSelectedDay(currentDayNum);
           }}
           className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
-            activeMonthId === 'oct'
+            activeMonthKey === 'current'
               ? 'bg-white text-[#1B1917] shadow-xs'
               : 'text-[#786E65] hover:text-[#1B1917]'
           }`}
         >
-          <span>October 2026 (Now)</span>
+          <span>{currentMonthConfig.label} (Now)</span>
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -213,10 +211,8 @@ export default function SadhanaCalendarView() {
             const isLateFilled = Boolean(rec && rec.points_earned > 0 && rec.is_late_submission);
             const isSelected = selectedDay === dayNum;
 
-            // Check if day is >3 days late
-            const thisDayDate = new Date(activeMonth.year, activeMonth.monthIndex, dayNum);
-            const lateDays = Math.round((todayDateObj.getTime() - thisDayDate.getTime()) / (1000 * 60 * 60 * 24));
-            const isLocked = lateDays > 3;
+            // Check if day is >3 days late (IST)
+            const isLocked = isOlderThan3DaysIST(dStr, todayDateStr);
 
             return (
               <div key={`${activeMonth.id}-${dayNum}`} className="flex flex-col items-center">

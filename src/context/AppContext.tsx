@@ -28,6 +28,7 @@ import {
 } from '@/lib/mockData';
 
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { getIndianTodayStr } from '@/lib/dateUtils';
 import {
   apiSignUp,
   apiSignIn,
@@ -78,6 +79,7 @@ interface AppContextType {
   dismissReminder: () => void;
   isLogModalOpen: boolean;
   selectedDateForModal: string;
+  todayStr: string;
   openLogModal: () => void;
   openLogModalForDate: (date: string) => void;
   closeLogModal: () => void;
@@ -126,7 +128,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [ccTransactions, setCcTransactions] = useState<CCTransaction[]>(initialCCTransactions);
   const [reminder, setReminder] = useState<ReminderNotification | null>(initialReminder);
   const [isLogModalOpen, setIsLogModalOpen] = useState<boolean>(false);
-  const [selectedDateForModal, setSelectedDateForModal] = useState<string>('2026-10-03');
+  const [selectedDateForModal, setSelectedDateForModal] = useState<string>(getIndianTodayStr());
   const [sadhanaRecords, setSadhanaRecords] = useState<Record<string, SadhanaRecord>>(initialSadhanaRecords);
   const [readingState, setReadingState] = useState<UserReadingState>(initialReadingState);
   const [pointRules, setPointRules] = useState<PointRuleConfig[]>(initialPointRules);
@@ -406,7 +408,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const todayStr = '2026-10-03';
+  const todayStr = getIndianTodayStr();
   const todayRecord = sadhanaRecords[todayStr] || null;
   const todaySadhanaSubmitted = Boolean(todayRecord && todayRecord.points_earned > 0);
 
@@ -882,6 +884,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         dismissReminder,
         isLogModalOpen,
         selectedDateForModal,
+        todayStr,
         openLogModal,
         openLogModalForDate,
         closeLogModal,

@@ -4,29 +4,20 @@ import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { GitCommit, Calendar as CalendarIcon, Info, Check } from 'lucide-react';
 
-interface MonthData {
-  id: 'aug' | 'sep' | 'oct' | 'all';
-  label: string;
-  shortLabel: string;
-  year: number;
-  monthIndex: number; // 0-indexed (7 = Aug, 8 = Sep, 9 = Oct)
-  daysCount: number;
-  prefix: string; // e.g. "2026-10"
-}
-
-const MONTHS: MonthData[] = [
-  { id: 'aug', label: 'August 2026', shortLabel: 'Aug', year: 2026, monthIndex: 7, daysCount: 31, prefix: '2026-08' },
-  { id: 'sep', label: 'September 2026', shortLabel: 'Sep', year: 2026, monthIndex: 8, daysCount: 30, prefix: '2026-09' },
-  { id: 'oct', label: 'October 2026 (Now)', shortLabel: 'Oct', year: 2026, monthIndex: 9, daysCount: 31, prefix: '2026-10' },
-];
+import {
+  getIndianTodayStr,
+  getRecentMonthsIST,
+  getMonthStartDayOfWeek,
+  DynamicMonthConfig,
+} from '@/lib/dateUtils';
 
 export default function SadhanaHeatmap() {
-  const { sadhanaRecords, openLogModalForDate } = useApp();
-  const [selectedMonthId, setSelectedMonthId] = useState<'aug' | 'sep' | 'oct' | 'all'>('oct');
+  const { sadhanaRecords, openLogModalForDate, todayStr } = useApp();
+  const todayDateStr = todayStr || getIndianTodayStr();
+  const months = React.useMemo(() => getRecentMonthsIST(3), [todayDateStr]);
+  const currentMonthId = months[months.length - 1]?.id || 'current';
+  const [selectedMonthId, setSelectedMonthId] = useState<string>(currentMonthId);
   const [hoveredDay, setHoveredDay] = useState<{ dayNum: number; dateStr: string; pts10: number; points: number; monthName: string } | null>(null);
-
-  // Today is Oct 3, 2026
-  const todayDateStr = '2026-10-03';
 
   // Convert points earned (0-100) to GitHub 10-point scale (at most 10 points)
   const getDayPoints10 = (pointsEarned: number) => {
@@ -96,8 +87,8 @@ export default function SadhanaHeatmap() {
   const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   // Helper to build days for a specific month
-  const buildMonthGrid = (m: MonthData) => {
-    const startDayOfWeek = new Date(m.year, m.monthIndex, 1).getDay();
+  const buildMonthGrid = (m: DynamicMonthConfig) => {
+    const startDayOfWeek = getMonthStartDayOfWeek(m.year, m.monthIndex);
     const padding = Array.from({ length: startDayOfWeek });
 
     const days = Array.from({ length: m.daysCount }, (_, i) => {
@@ -115,7 +106,7 @@ export default function SadhanaHeatmap() {
     return { m, padding, days };
   };
 
-  const activeMonthData = MONTHS.find((m) => m.id === selectedMonthId) || MONTHS[2];
+  const activeMonthData = months.find((m) => m.id === selectedMonthId) || months[months.length - 1];
 
   return (
     <div className="glass-surface p-4.5 rounded-[26px] shadow-xs">
@@ -136,10 +127,10 @@ export default function SadhanaHeatmap() {
         </div>
 
         {/* Real-time Today Status Pill */}
-        {sadhanaRecords['2026-10-03'] ? (
+        {sadhanaRecords[todayDateStr] ? (
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#216E39] text-white text-[10px] font-black shadow-2xs">
             <Check className="w-3 h-3 stroke-[3]" />
-            <span>Today: {getDayPoints10(sadhanaRecords['2026-10-03'].points_earned)}/10</span>
+            <span>Today: {getDayPoints10(sadhanaRecords[todayDateStr].points_earned)}/10</span>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-[#9C4507] text-[10px] font-bold">
@@ -150,7 +141,7 @@ export default function SadhanaHeatmap() {
 
       {/* 3 Months Segmented Switcher */}
       <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl mb-3.5 overflow-x-auto scrollbar-none">
-        {MONTHS.map((m) => {
+        {months.map((m) => {
           const isSelected = selectedMonthId === m.id;
           return (
             <button
@@ -163,7 +154,7 @@ export default function SadhanaHeatmap() {
                   : 'text-[#786E65] hover:text-[#1B1917]'
               }`}
             >
-              {m.shortLabel} &apos;26
+              {m.shortLabel} &apos;{String(m.year).slice(-2)}
             </button>
           );
         })}
@@ -183,7 +174,7 @@ export default function SadhanaHeatmap() {
       {/* If "all" is selected, show multi-month overview */}
       {selectedMonthId === 'all' ? (
         <div className="space-y-4">
-          {MONTHS.map((m) => {
+          {months.map((m) => {
             const { padding, days } = buildMonthGrid(m);
             return (
               <div key={m.id} className="p-2.5 bg-stone-50/70 rounded-2xl border border-stone-200/50">
