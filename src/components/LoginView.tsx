@@ -12,8 +12,9 @@ import {
   CheckCircle2,
   Mail,
   KeyRound,
+  UserPlus,
 } from 'lucide-react';
-import { apiGetRegisteredGuides } from '@/lib/supabaseService';
+import { apiGetRegisteredGuides, apiCheckAccountExists } from '@/lib/supabaseService';
 import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 
 export default function LoginView() {
@@ -25,6 +26,7 @@ export default function LoginView() {
   const [errors, setErrors] = useState<{ phone?: string; password?: string; guidePasscode?: string }>({});
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [noAccountFound, setNoAccountFound] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   // Active guides from Supabase
@@ -105,11 +107,20 @@ export default function LoginView() {
     if (isLiveBackend) {
       setLoading(true);
       setAuthError(null);
+      setNoAccountFound(false);
       const trimmed = phone.trim();
 
       const { error } = await signIn(trimmed, password);
-      setLoading(false);
       if (error) {
+        const exists = await apiCheckAccountExists(trimmed);
+        setLoading(false);
+
+        if (!exists) {
+          setNoAccountFound(true);
+          setAuthError(`No account registered with "${trimmed}". Please create an account first.`);
+          return;
+        }
+
         if (error.message?.toLowerCase().includes('not confirmed')) {
           setAuthError('Email not confirmed. Please check your inbox for confirmation email or disable "Confirm email" in Supabase settings.');
         } else {
@@ -117,6 +128,7 @@ export default function LoginView() {
         }
         return;
       }
+      setLoading(false);
     }
 
     setScreen('home');
@@ -124,6 +136,7 @@ export default function LoginView() {
 
   const handlePhoneChange = (val: string) => {
     setPhone(val);
+    setNoAccountFound(false);
     if (errors.phone) {
       setErrors((prev) => ({ ...prev, phone: undefined }));
     }
@@ -162,9 +175,26 @@ export default function LoginView() {
         </p>
 
         {authError && (
-          <div className="mt-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
-            <span>{authError}</span>
+          <div className="mt-3 p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold space-y-2.5 animate-in fade-in duration-150">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+              <span className="leading-snug">{authError}</span>
+            </div>
+            {noAccountFound && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('folk_prefill_signup', phone.trim());
+                  }
+                  setScreen('signup');
+                }}
+                className="w-full h-10 rounded-xl saffron-gradient-btn text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition-all"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Create New Account with {phone.trim()}</span>
+              </button>
+            )}
           </div>
         )}
       </div>

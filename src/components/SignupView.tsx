@@ -54,6 +54,18 @@ export default function SignupView() {
         })
         .catch(() => {});
     }
+
+    if (typeof window !== 'undefined') {
+      const prefill = sessionStorage.getItem('folk_prefill_signup') || '';
+      if (prefill) {
+        if (prefill.includes('@')) {
+          setEmail(prefill);
+        } else {
+          setPhone(prefill.replace(/\D/g, '').slice(0, 10));
+        }
+        sessionStorage.removeItem('folk_prefill_signup');
+      }
+    }
   }, []);
 
   // Phone 10-digit validation check

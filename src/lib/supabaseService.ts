@@ -662,4 +662,33 @@ export async function apiSimpleResetPassword(
   };
 }
 
+export async function apiCheckAccountExists(identifier: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return true;
+
+  const clean = identifier.trim();
+  const cleanPhone = clean.replace(/\D/g, '');
+
+  // 1. Try PostgreSQL RPC
+  try {
+    const { data, error } = await supabase.rpc('check_account_exists', {
+      p_identifier: clean,
+    });
+    if (!error && typeof data === 'boolean') {
+      return data;
+    }
+  } catch (err) {
+    console.warn('check_account_exists RPC note:', err);
+  }
+
+  // 2. Check local phone mapping cache
+  if (typeof window !== 'undefined') {
+    const cached =
+      localStorage.getItem(`folk_phone_map_${cleanPhone}`) ||
+      localStorage.getItem(`folk_phone_map_${cleanPhone.slice(-10)}`);
+    if (cached) return true;
+  }
+
+  return true;
+}
+
 

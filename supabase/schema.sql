@@ -581,3 +581,40 @@ end;
 $$;
 
 grant execute on function public.auto_confirm_user_email to anon, authenticated;
+
+-- Check if account exists by phone or email
+create or replace function public.check_account_exists(p_identifier text)
+returns boolean
+language plpgsql
+security definer set search_path = public, auth
+as $$
+declare
+  v_clean text;
+begin
+  v_clean := regexp_replace(p_identifier, '\D', '', 'g');
+
+  -- Check profiles
+  if exists (
+    select 1 from public.profiles
+    where phone = p_identifier
+       or (length(v_clean) = 10 and phone = v_clean)
+       or lower(email) = lower(p_identifier)
+       or email = (v_clean || '@folk.org')
+  ) then
+    return true;
+  end if;
+
+  -- Check auth.users
+  if exists (
+    select 1 from auth.users
+    where lower(email) = lower(p_identifier)
+       or email = (v_clean || '@folk.org')
+  ) then
+    return true;
+  end if;
+
+  return false;
+end;
+$$;
+
+grant execute on function public.check_account_exists to anon, authenticated;
