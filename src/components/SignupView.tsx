@@ -56,12 +56,26 @@ export default function SignupView() {
     }
 
     if (typeof window !== 'undefined') {
-      const prefill = sessionStorage.getItem('folk_prefill_signup') || '';
-      if (prefill) {
-        if (prefill.includes('@')) {
-          setEmail(prefill);
-        } else {
-          setPhone(prefill.replace(/\D/g, '').slice(0, 10));
+      const prefillRaw = sessionStorage.getItem('folk_prefill_signup') || '';
+      if (prefillRaw) {
+        try {
+          const parsed = JSON.parse(prefillRaw);
+          if (parsed.identifier) {
+            if (parsed.identifier.includes('@')) {
+              setEmail(parsed.identifier);
+            } else {
+              setPhone(parsed.identifier.replace(/\D/g, '').slice(0, 10));
+            }
+          }
+          if (parsed.role) {
+            setRole(parsed.role);
+          }
+        } catch {
+          if (prefillRaw.includes('@')) {
+            setEmail(prefillRaw);
+          } else {
+            setPhone(prefillRaw.replace(/\D/g, '').slice(0, 10));
+          }
         }
         sessionStorage.removeItem('folk_prefill_signup');
       }

@@ -688,7 +688,8 @@ export async function apiCheckAccountExists(identifier: string): Promise<boolean
     if (cached) return true;
   }
 
-  return true;
+  // If not found in local cache and not confirmed by RPC, return false so new users are prompted to register
+  return false;
 }
 
 

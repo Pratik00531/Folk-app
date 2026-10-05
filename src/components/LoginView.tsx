@@ -112,19 +112,14 @@ export default function LoginView() {
 
       const { error } = await signIn(trimmed, password);
       if (error) {
-        const exists = await apiCheckAccountExists(trimmed);
         setLoading(false);
+        setNoAccountFound(true);
 
-        if (!exists) {
-          setNoAccountFound(true);
-          setAuthError(`No account registered with "${trimmed}". Please create an account first.`);
-          return;
-        }
-
-        if (error.message?.toLowerCase().includes('not confirmed')) {
-          setAuthError('Email not confirmed. Please check your inbox for confirmation email or disable "Confirm email" in Supabase settings.');
+        const isUnconfirmed = error.message?.toLowerCase().includes('not confirmed');
+        if (isUnconfirmed) {
+          setAuthError('Email not confirmed. Please check your inbox for the confirmation email or disable "Confirm email" in Supabase settings.');
         } else {
-          setAuthError(error.message || 'Invalid credentials. Please verify your mobile/email and password.');
+          setAuthError(`No account found or incorrect password for "${trimmed}". First time logging in? Create your account below.`);
         }
         return;
       }
@@ -175,9 +170,9 @@ export default function LoginView() {
         </p>
 
         {authError && (
-          <div className="mt-3 p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold space-y-2.5 animate-in fade-in duration-150">
+          <div className="mt-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs font-semibold space-y-2.5 animate-in fade-in duration-150">
             <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+              <AlertCircle className="w-4 h-4 shrink-0 text-[#E07A2B] mt-0.5" />
               <span className="leading-snug">{authError}</span>
             </div>
             {noAccountFound && (
@@ -185,14 +180,22 @@ export default function LoginView() {
                 type="button"
                 onClick={() => {
                   if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('folk_prefill_signup', phone.trim());
+                    sessionStorage.setItem(
+                      'folk_prefill_signup',
+                      JSON.stringify({
+                        identifier: phone.trim(),
+                        role: selectedRoleType === 'guide' ? 'folk_guide' : 'folk_boy',
+                      })
+                    );
                   }
                   setScreen('signup');
                 }}
-                className="w-full h-10 rounded-xl saffron-gradient-btn text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition-all"
+                className="w-full h-11 rounded-xl saffron-gradient-btn text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer active:scale-95 transition-all"
               >
-                <UserPlus className="w-3.5 h-3.5" />
-                <span>Create New Account with {phone.trim()}</span>
+                <UserPlus className="w-4 h-4" />
+                <span>
+                  Create {selectedRoleType === 'guide' ? 'FOLK Guide' : 'Devotee'} Account with {phone.trim()} →
+                </span>
               </button>
             )}
           </div>
