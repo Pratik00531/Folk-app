@@ -33,19 +33,26 @@ export default function PointsBreakdownModal() {
 
         {/* Body */}
         <div className="overflow-y-auto p-5 space-y-4">
-          {/* 100 Points Total System Banner */}
-          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-[#7A4B1A] space-y-1.5">
-            <div className="flex items-center justify-between font-bold">
-              <span>🎯 100 Points Daily Sādhana Target</span>
-              <span className="text-[#15803D] bg-emerald-100 px-2 py-0.5 rounded-full font-black">
-                Max 100 pts
-              </span>
-            </div>
-            <p className="text-[11px] text-[#786E65] leading-relaxed">
-              • <strong>Weekdays (Mon–Sat):</strong> Darshan Ārati is excluded. Perfect attendance reaches exactly <strong>100 points</strong> (Maṅgala: 20, Japa 16R: 40, SB: 20, JF: 10, Book: 10).<br />
-              • <strong>Sundays:</strong> Darshan Ārati is counted (10 pts) and all activities sum to <strong>100 points</strong> (Maṅgala: 20, Japa 16R: 35, Darshan: 10, SB: 15, JF: 10, Book: 10).
-            </p>
-          </div>
+          {/* Dynamic Points Banner */}
+          {(() => {
+            const totalMaxPoints = pointRules.reduce(
+              (acc, r) => acc + (r.is_active ? (r.ontime_points ?? r.points ?? 0) : 0),
+              0
+            );
+            return (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-[#7A4B1A] space-y-1.5">
+                <div className="flex items-center justify-between font-bold">
+                  <span>🎯 Daily Sādhana Point Matrix</span>
+                  <span className="text-[#15803D] bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 px-2.5 py-0.5 rounded-full font-black">
+                    Configured by Guide ({totalMaxPoints} pts Max)
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#786E65] dark:text-stone-300 leading-relaxed">
+                  Points and time cutoffs are configured directly by your FOLK Guide. Points are awarded based on your arrival time or completion. Colors reflect points earned (Green for full points down to Red for 0).
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Color Legend (Points-Based System) */}
           <div className="bg-white/80 dark:bg-stone-800/80 p-3.5 rounded-2xl border border-stone-200/50 dark:border-stone-700/60 space-y-2">

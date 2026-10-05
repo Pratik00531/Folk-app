@@ -31,6 +31,7 @@ import {
   isOlderThan3DaysIST,
   getDaysDifference,
 } from '@/lib/dateUtils';
+import { evaluateSadhanaRecord } from '@/lib/pointRuleEngine';
 
 // Authentic Lotus Emblem SVG
 function LotusIcon({ className = 'w-6 h-6 text-[#DC6820]' }: { className?: string }) {
@@ -90,6 +91,7 @@ export default function SadhanaLogModal() {
     setIsPointsModalOpen,
     setActiveFolkBoyTab,
     todayStr,
+    pointRules,
   } = useApp();
 
   const currentTodayStr = todayStr || getIndianTodayStr();
@@ -229,16 +231,22 @@ export default function SadhanaLogModal() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Estimate Points for the celebration dialog based on the 100-pt rule
-    let pts = 0;
-    if (mangalaAttended) pts += 20;
-    if (japaAttended) pts += isSunday ? 35 : (japaRounds >= 16 ? 40 : 28);
-    if (isSunday && darshanAttended) pts += 10;
-    if (sbAttended) pts += isSunday ? 15 : 20;
-    if (jfAttended) pts += 10;
-    if (readingAttended) pts += 10;
-    const finalScore = pts > 0 ? pts : 100;
-    setSubmittedScore(finalScore);
+    // Evaluate Points for the celebration dialog based on the Guide's live configured rules
+    const currentEvaluation = evaluateSadhanaRecord(
+      {
+        mangala_arati_time: mangalaAttended ? mangalaArati : null,
+        japa_start_time: japaAttended ? japaArrival : null,
+        japa_finish_time: japaAttended ? japaLeaving : null,
+        japa_rounds: japaAttended ? japaRounds : 0,
+        darshan_arati_time: isSunday && darshanAttended ? darshanArati : null,
+        srimad_bhagavatam_time: sbAttended ? sbClass : null,
+        japa_finish_slot_time: jfAttended ? jfTime : null,
+        book_reading_minutes: readingAttended ? readingMinutes : 0,
+      },
+      pointRules,
+      isSunday
+    );
+    setSubmittedScore(currentEvaluation.totalPoints);
 
     // If older than 3 days, route as an approval request to Folk Lead!
     if (isOlderThan3Days) {

@@ -88,9 +88,8 @@ export default function PointRulesManagerModal({ onClose }: { onClose: () => voi
               <Shield className="w-4 h-4 text-[#DC6820] shrink-0" />
               <span>FOLK Guide Point Configuration Matrix</span>
             </div>
-            <p className="text-[11px] text-[#786E65]">
-              Set custom time ranges: "From this time to this time → this much points".
-              Weekdays reach 100 points (Darshan excluded). Sundays reach 100 points (Darshan included).
+            <p className="text-[11px] text-[#786E65] leading-relaxed">
+              Configure flexible time ranges and points: e.g. &ldquo;From 05:00 AM to 05:05 AM → 4 points&rdquo;. Whatever cutoffs and points you configure here are automatically applied across all devotee Sādhana reports in real time.
             </p>
             <div className="flex items-center gap-3 pt-1 text-[10px] font-bold">
               <span className="flex items-center gap-1 text-[#16A34A]">

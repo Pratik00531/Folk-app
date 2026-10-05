@@ -377,6 +377,25 @@ create policy "Reminder logs insert policy"
     or auth.role() = 'anon'
   );
 
+-- POINT RULES POLICIES
+create policy "Point rules select policy"
+  on public.point_rules for select
+  using (true);
+
+create policy "Point rules insert policy"
+  on public.point_rules for insert
+  with check (
+    public.current_user_role() in ('folk_guide', 'folk_lead')
+    or auth.role() = 'anon'
+  );
+
+create policy "Point rules update policy"
+  on public.point_rules for update
+  using (
+    public.current_user_role() in ('folk_guide', 'folk_lead')
+    or auth.role() = 'anon'
+  );
+
 -- Sequence for auto-generating human-readable FOLK-IDs: FOLK-2026-XXXX
 create sequence if not exists public.folk_id_seq start 1001;
 

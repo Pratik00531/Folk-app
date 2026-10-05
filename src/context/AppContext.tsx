@@ -50,8 +50,11 @@ import {
   apiGetGuideDevotees,
   apiSendRemindersToDevotees,
   apiGetLatestReminderForDevotee,
+  apiGetActivePointRules,
+  apiSavePointRules,
 } from '@/lib/supabaseService';
 import { sendDeviceNotification } from '@/lib/notificationService';
+import { evaluateSadhanaRecord } from '@/lib/pointRuleEngine';
 
 export type ScreenType = 'splash' | 'welcome' | 'login' | 'signup' | 'home';
 
@@ -272,6 +275,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             }
           }
         });
+      }
+    });
+
+    // Load Guide Point Rules from Supabase or localStorage
+    if (typeof window !== 'undefined') {
+      const local = localStorage.getItem('folk_point_rules');
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          if (Array.isArray(parsed) && parsed.length > 0) setPointRules(parsed);
+        } catch {}
+      }
+    }
+    apiGetActivePointRules().then(({ data: remoteRules }) => {
+      if (remoteRules && remoteRules.length > 0) {
+        setPointRules(remoteRules);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('folk_point_rules', JSON.stringify(remoteRules));
+        }
       }
     });
 
@@ -564,124 +586,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const dayOfWeek = new Date(parts[0], parts[1] - 1, parts[2]).getDay();
     const isSunday = dayOfWeek === 0;
 
-    // Dynamic points calculation based on current pointRules
-    let calculatedPoints = 0;
-    const mangalaRule = pointRules.find((r) => r.activity === 'mangala_arati');
-    const japaRule = pointRules.find((r) => r.activity === 'japa');
-    const sbRule = pointRules.find((r) => r.activity === 'srimad_bhagavatam');
-    const jfRule = pointRules.find((r) => r.activity === 'japa_finish');
-    const darshanRule = pointRules.find((r) => r.activity === 'darshan_arati');
-    const bookRule = pointRules.find((r) => r.activity === 'book_reading');
-
-    // 1. Mangala dot & points (20 pts)
-    let mangalaDot: 'green' | 'light_green' | 'yellow' | 'red' | 'grey' = 'red';
-    if (data.mangala_arati_time) {
-      const timeStr = data.mangala_arati_time.toUpperCase();
-      const ontimeLimit = mangalaRule?.ontime_to || mangalaRule?.ontime_cutoff || '05:05 AM';
-      const lateLimit = mangalaRule?.late_to || mangalaRule?.late_cutoff || '05:15 AM';
-      if (timeStr <= ontimeLimit) {
-        mangalaDot = 'green';
-        calculatedPoints += mangalaRule?.ontime_points ?? 20;
-      } else if (timeStr <= lateLimit) {
-        mangalaDot = 'light_green';
-        calculatedPoints += mangalaRule?.late_points ?? 14;
-      } else {
-        mangalaDot = 'yellow';
-        calculatedPoints += mangalaRule?.lastmin_points ?? 8;
-      }
-    }
-
-    // 2. Japa dot & points (Weekday: 40 pts, Sunday: 35 pts)
-    let japaDot: 'green' | 'light_green' | 'yellow' | 'red' | 'grey' = 'red';
-    if (data.japa_start_time && data.japa_rounds && data.japa_rounds > 0) {
-      const fullJapa = isSunday ? 35 : (japaRule?.ontime_points ?? 40);
-      const lateJapa = isSunday ? 24 : (japaRule?.late_points ?? 28);
-      const lastminJapa = isSunday ? 14 : (japaRule?.lastmin_points ?? 16);
-
-      if (data.japa_rounds >= 16) {
-        japaDot = 'green';
-        calculatedPoints += fullJapa;
-      } else if (data.japa_rounds >= 12) {
-        japaDot = 'light_green';
-        calculatedPoints += lateJapa;
-      } else if (data.japa_rounds >= 8) {
-        japaDot = 'yellow';
-        calculatedPoints += lastminJapa;
-      } else {
-        japaDot = 'yellow';
-        calculatedPoints += Math.round(lastminJapa / 2);
-      }
-    }
-
-    // 3. Darshan Ārati (Sunday only: 10 pts; Weekday: 0 pts, NOT calculated)
-    let darshanDot: 'green' | 'light_green' | 'yellow' | 'red' | 'grey' = 'grey';
-    if (isSunday) {
-      if (data.darshan_arati_time) {
-        const timeStr = data.darshan_arati_time.toUpperCase();
-        const ontimeLimit = darshanRule?.ontime_to || darshanRule?.ontime_cutoff || '07:30 AM';
-        const lateLimit = darshanRule?.late_to || darshanRule?.late_cutoff || '07:45 AM';
-        if (timeStr <= ontimeLimit) {
-          darshanDot = 'green';
-          calculatedPoints += darshanRule?.ontime_points ?? 10;
-        } else if (timeStr <= lateLimit) {
-          darshanDot = 'light_green';
-          calculatedPoints += darshanRule?.late_points ?? 7;
-        } else {
-          darshanDot = 'yellow';
-          calculatedPoints += darshanRule?.lastmin_points ?? 4;
-        }
-      } else {
-        darshanDot = 'red';
-      }
-    } else {
-      // Not Sunday -> Darshan is strictly NOT calculated
-      darshanDot = 'grey';
-    }
-
-    // 4. Śrīmad Bhāgavatam (Weekday: 20 pts, Sunday: 15 pts)
-    let sbDot: 'green' | 'light_green' | 'yellow' | 'red' | 'grey' = 'red';
-    if (data.srimad_bhagavatam_time) {
-      const timeStr = data.srimad_bhagavatam_time.toUpperCase();
-      const ontimeLimit = sbRule?.ontime_to || sbRule?.ontime_cutoff || '07:35 AM';
-      const lateLimit = sbRule?.late_to || sbRule?.late_cutoff || '07:45 AM';
-      const fullSb = isSunday ? 15 : (sbRule?.ontime_points ?? 20);
-      const lateSb = isSunday ? 10 : (sbRule?.late_points ?? 14);
-      const lastminSb = isSunday ? 5 : (sbRule?.lastmin_points ?? 8);
-
-      if (timeStr <= ontimeLimit) {
-        sbDot = 'green';
-        calculatedPoints += fullSb;
-      } else if (timeStr <= lateLimit) {
-        sbDot = 'light_green';
-        calculatedPoints += lateSb;
-      } else {
-        sbDot = 'yellow';
-        calculatedPoints += lastminSb;
-      }
-    }
-
-    // 5. JF (Japa Finish Slot) (10 pts)
-    let jfDot: 'green' | 'light_green' | 'yellow' | 'red' | 'grey' = 'red';
-    if (data.japa_finish_slot_time) {
-      jfDot = 'green';
-      calculatedPoints += jfRule?.ontime_points ?? 10;
-    }
-
-    // 6. Book Reading (10 pts)
-    let readingDot: 'green' | 'light_green' | 'yellow' | 'red' | 'grey' = 'red';
+    // Dynamically evaluate against the Guide's live configured rules (no hardcoded point numbers!)
+    const evalResult = evaluateSadhanaRecord(data, pointRules, isSunday);
+    const finalPoints = evalResult.totalPoints;
     const readingMins = Number(data.book_reading_minutes) || 0;
-    if (readingMins >= 30) {
-      readingDot = 'green';
-      calculatedPoints += bookRule?.ontime_points ?? 10;
-    } else if (readingMins >= 15) {
-      readingDot = 'light_green';
-      calculatedPoints += bookRule?.late_points ?? 7;
-    } else if (readingMins >= 5) {
-      readingDot = 'yellow';
-      calculatedPoints += bookRule?.lastmin_points ?? 4;
-    }
-
-    const finalPoints = calculatedPoints;
     const earnedCC = date === todayStr ? 10 : 5;
     const newBalance = ccBalance + earnedCC;
 
@@ -803,20 +711,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             last_submitted_date: date === todayStr ? 'Today, Just now' : date,
             pillars: {
               mangala: Boolean(data.mangala_arati_time),
-              japa: Boolean(data.japa_start_time),
+              japa: Boolean(data.japa_rounds && data.japa_rounds > 0),
               darshan: Boolean(data.darshan_arati_time),
               bhagavatam: Boolean(data.srimad_bhagavatam_time),
               jf: Boolean(data.japa_finish_slot_time),
-              reading: readingMins > 0,
+              reading: Boolean(data.book_reading_minutes && data.book_reading_minutes > 0),
             },
-            pillar_dots: {
-              mangala: mangalaDot,
-              japa: japaDot,
-              darshan: darshanDot,
-              bhagavatam: sbDot,
-              jf: jfDot,
-              reading: readingDot,
-            },
+            pillar_dots: evalResult.pillarDots,
             japa_rounds: data.japa_rounds || 16,
             japa_arrival: data.japa_start_time || null,
             japa_leaving: data.japa_finish_time || null,
@@ -903,15 +804,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updatePointRule = (ruleId: string, updates: Partial<PointRuleConfig> | number, newThreshold?: string) => {
-    setPointRules((prev) =>
-      prev.map((r) => {
+    setPointRules((prev) => {
+      const nextRules = prev.map((r) => {
         if (r.id !== ruleId) return r;
         if (typeof updates === 'number') {
           return { ...r, points: updates, threshold_time: newThreshold ?? r.threshold_time };
         }
         return { ...r, ...updates, points: updates.points ?? updates.ontime_points ?? r.points };
-      })
-    );
+      });
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('folk_point_rules', JSON.stringify(nextRules));
+      }
+      apiSavePointRules(nextRules).catch((err) => console.warn('apiSavePointRules error:', err));
+
+      return nextRules;
+    });
   };
 
   const toggleLeadRole = (devoteeId: string) => {

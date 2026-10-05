@@ -91,9 +91,7 @@ export const initialReadingState: UserReadingState = {
   completed_books: [],
 };
 
-// Active Point Rules with Tiered Cutoffs (Assigned by FOLK Guide)
-// Weekdays: Mangala (20) + Japa (40) + SB (20) + JF (10) + Book (10) = 100 pts (Darshan excluded = 0)
-// Sundays:  Mangala (20) + Japa (35) + Darshan (10) + SB (15) + JF (10) + Book (10) = 100 pts
+// Default baseline Point Rules (Guide can customize all cutoffs, windows, and points dynamically via Guide Point & Cutoff System)
 export const initialPointRules: PointRuleConfig[] = [
   {
     id: 'pr-01',

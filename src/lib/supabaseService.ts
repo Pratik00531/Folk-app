@@ -1,6 +1,8 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import type { UserProfile, SadhanaRecord, StreakData, SadhanaApprovalRequest, UserReadingState } from '@/types/database';
+import type { UserProfile, SadhanaRecord, StreakData, SadhanaApprovalRequest, UserReadingState, PointRuleConfig } from '@/types/database';
 import { getIndianTodayStr } from './dateUtils';
+import { evaluateSadhanaRecord } from './pointRuleEngine';
+import { initialPointRules } from './mockData';
 
 // ==============================================================================
 // 1. AUTHENTICATION SERVICES
@@ -485,6 +487,8 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
     }
 
     const todayStr = getIndianTodayStr();
+    const { data: activeRules } = await apiGetActivePointRules();
+    const rules = activeRules && activeRules.length > 0 ? activeRules : initialPointRules;
 
     const devotees = await Promise.all(
       profiles.map(async (p: any) => {
@@ -508,12 +512,14 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
           .eq('user_id', p.id)
           .single();
 
-        const isToday = latestRecord?.record_date === todayStr;
-        const submitted = Boolean(isToday && latestRecord?.points_earned > 0);
-
         const recDate = latestRecord?.record_date || todayStr;
         const parts = recDate.split('-').map(Number);
         const isSunday = new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+
+        // Strictly evaluate against Guide's configured rules without hardcoded numbers
+        const evalResult = evaluateSadhanaRecord(latestRecord, rules, isSunday);
+        const isToday = latestRecord?.record_date === todayStr;
+        const submitted = Boolean(isToday && evalResult.totalPoints > 0);
 
         return {
           id: p.id,
@@ -522,62 +528,23 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
           role: p.role,
           avatar_url: p.avatar_url || '/assets/images/Chanting.png',
           streak: streakData?.current_reporting_streak || 0,
-          points_today: isToday ? latestRecord?.points_earned || 0 : 0,
+          points_today: isToday ? evalResult.totalPoints : 0,
           submitted,
           last_sadhana_label: isToday
             ? "Today's Sādhana"
             : latestRecord
             ? `Previous: ${latestRecord.record_date}`
             : 'No submissions yet',
-          last_points: latestRecord?.points_earned || 0,
+          last_points: evalResult.totalPoints,
           pillars: {
             mangala: Boolean(latestRecord?.mangala_arati_time),
-            japa: Boolean(latestRecord?.japa_rounds && latestRecord.japa_rounds >= 16),
+            japa: Boolean(latestRecord?.japa_rounds && latestRecord.japa_rounds > 0),
             darshan: Boolean(latestRecord?.darshan_arati_time),
             bhagavatam: Boolean(latestRecord?.srimad_bhagavatam_time),
             jf: Boolean(latestRecord?.japa_finish_slot_time),
             reading: Boolean(latestRecord?.book_reading_minutes && latestRecord.book_reading_minutes > 0),
           },
-          pillar_dots: {
-            mangala: !latestRecord?.mangala_arati_time
-              ? 'red'
-              : latestRecord.mangala_arati_time <= '05:05 AM'
-              ? 'green'
-              : latestRecord.mangala_arati_time <= '05:15 AM'
-              ? 'light_green'
-              : 'yellow',
-            japa: !latestRecord?.japa_rounds || latestRecord.japa_rounds <= 0
-              ? 'red'
-              : latestRecord.japa_rounds >= 16
-              ? 'green'
-              : latestRecord.japa_rounds >= 12
-              ? 'light_green'
-              : 'yellow',
-            darshan: !isSunday
-              ? 'grey'
-              : !latestRecord?.darshan_arati_time
-              ? 'red'
-              : latestRecord.darshan_arati_time <= '07:30 AM'
-              ? 'green'
-              : latestRecord.darshan_arati_time <= '07:45 AM'
-              ? 'light_green'
-              : 'yellow',
-            bhagavatam: !latestRecord?.srimad_bhagavatam_time
-              ? 'red'
-              : latestRecord.srimad_bhagavatam_time <= '07:35 AM'
-              ? 'green'
-              : latestRecord.srimad_bhagavatam_time <= '07:45 AM'
-              ? 'light_green'
-              : 'yellow',
-            jf: latestRecord?.japa_finish_slot_time ? 'green' : 'red',
-            reading: !latestRecord?.book_reading_minutes || latestRecord.book_reading_minutes <= 0
-              ? 'red'
-              : latestRecord.book_reading_minutes >= 30
-              ? 'green'
-              : latestRecord.book_reading_minutes >= 15
-              ? 'light_green'
-              : 'yellow',
-          },
+          pillar_dots: evalResult.pillarDots,
           japa_rounds: latestRecord?.japa_rounds || 0,
           japa_arrival: latestRecord?.japa_start_time || null,
           japa_leaving: latestRecord?.japa_finish_time || null,
@@ -873,6 +840,56 @@ export async function apiGetLatestReminderForDevotee(userId: string): Promise<an
     return data;
   } catch (err) {
     return null;
+  }
+}
+
+// ==============================================================================
+// 13. GUIDE POINT & CUTOFF SYSTEM (DYNAMIC LIVE SYNC)
+// ==============================================================================
+
+export async function apiGetActivePointRules(): Promise<{ data: PointRuleConfig[] | null; error: any }> {
+  if (!isSupabaseConfigured) return { data: null, error: null };
+
+  try {
+    const { data, error } = await supabase
+      .from('point_rules')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) return { data: null, error };
+    const rawRules = data.rules;
+    if (Array.isArray(rawRules)) {
+      return { data: rawRules as PointRuleConfig[], error: null };
+    }
+    return { data: null, error: null };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+export async function apiSavePointRules(rules: PointRuleConfig[]): Promise<{ error: any }> {
+  if (!isSupabaseConfigured) return { error: null };
+
+  try {
+    const version = Math.floor(Date.now() / 1000);
+    // Mark prior versions inactive
+    await supabase.from('point_rules').update({ is_active: false }).eq('is_active', true);
+
+    const { error } = await supabase
+      .from('point_rules')
+      .insert({
+        version,
+        name: `Guide Rules (v${version})`,
+        rules,
+        is_active: true,
+      });
+
+    return { error };
+  } catch (err) {
+    return { error: err };
   }
 }
 
