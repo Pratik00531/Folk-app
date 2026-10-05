@@ -46,14 +46,22 @@ export default function SignupView() {
 
   // Load real registered guides from Supabase
   useEffect(() => {
-    apiGetRegisteredGuides().then(({ data }) => {
-      if (data && data.length > 0) {
-        setRegisteredGuides(data);
-        setSelectedGuide(data[0].name);
-      } else {
-        setIsCustomGuide(true);
-      }
-    });
+    if (typeof apiGetRegisteredGuides === 'function') {
+      apiGetRegisteredGuides()
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setRegisteredGuides(data);
+            setSelectedGuide(data[0].name);
+          } else {
+            setIsCustomGuide(true);
+          }
+        })
+        .catch(() => {
+          setIsCustomGuide(true);
+        });
+    } else {
+      setIsCustomGuide(true);
+    }
   }, []);
 
   // Phone 10-digit validation check

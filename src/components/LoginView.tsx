@@ -29,11 +29,17 @@ export default function LoginView() {
   const [activeGuides, setActiveGuides] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    apiGetRegisteredGuides().then(({ data }) => {
-      if (data && data.length > 0) {
-        setActiveGuides(data);
-      }
-    });
+    if (typeof apiGetRegisteredGuides === 'function') {
+      apiGetRegisteredGuides()
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setActiveGuides(data);
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not load guides:', err);
+        });
+    }
   }, []);
 
   const handleRoleSelect = (roleType: 'boy' | 'guide') => {
