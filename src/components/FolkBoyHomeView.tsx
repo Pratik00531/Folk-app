@@ -37,7 +37,6 @@ export default function FolkBoyHomeView() {
     reminder,
     dismissReminder,
     openLogModal,
-    switchRole,
     readingState,
     setActiveFolkBoyTab,
     setIsProfileModalOpen,

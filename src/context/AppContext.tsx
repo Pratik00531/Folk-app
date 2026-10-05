@@ -28,7 +28,7 @@ import {
 } from '@/lib/mockData';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { getIndianTodayStr } from '@/lib/dateUtils';
+import { getIndianTodayStr, getIndianYesterdayStr } from '@/lib/dateUtils';
 import {
   apiSignUp,
   apiSignIn,
@@ -86,7 +86,12 @@ interface AppContextType {
   openLogModal: () => void;
   openLogModalForDate: (date: string) => void;
   closeLogModal: () => void;
-  submitSadhanaForDate: (date: string, data: Partial<SadhanaRecord>) => void;
+  submitSadhanaForDate: (
+    date: string,
+    data: Partial<SadhanaRecord>,
+    targetUserId?: string,
+    targetFolkId?: string
+  ) => void;
   resetTodaySadhana: () => void;
   readingState: UserReadingState;
   updateCurrentBook: (bookId: string) => void;
@@ -304,10 +309,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const approvalSub = apiSubscribeToApprovalChanges((payload) => {
       if (payload.eventType === 'INSERT') {
-        setApprovalRequests((prev) => [payload.new, ...prev]);
+        const r = payload.new;
+        const mappedReq: SadhanaApprovalRequest = {
+          id: r.id,
+          user_id: r.user_id,
+          user_name: r.devotee_name || r.user_name || 'Devotee',
+          folk_id: r.devotee_folk_id || r.folk_id || 'FOLK-XXXX',
+          record_date: r.record_date,
+          data: r.sadhana_payload || r.data || {},
+          status: r.status,
+          reason: r.reason,
+          requested_at: r.created_at || r.requested_at || new Date().toISOString(),
+          reviewed_by: r.reviewed_by,
+          reviewed_at: r.reviewed_at,
+        };
+        setApprovalRequests((prev) => [mappedReq, ...prev]);
       } else if (payload.eventType === 'UPDATE') {
+        const r = payload.new;
         setApprovalRequests((prev) =>
-          prev.map((req) => (req.id === payload.new.id ? payload.new : req))
+          prev.map((req) =>
+            req.id === r.id
+              ? {
+                  ...req,
+                  status: r.status,
+                  reviewed_by: r.reviewed_by,
+                  reviewed_at: r.reviewed_at,
+                  reason: r.reason || req.reason,
+                }
+              : req
+          )
         );
       }
     });
@@ -520,7 +550,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const dismissReminder = () => setReminder(null);
 
   // Single Screen Sādhana Submission with Real-Time Guide Synchronization
-  const submitSadhanaForDate = (date: string, data: Partial<SadhanaRecord>) => {
+  const submitSadhanaForDate = (
+    date: string,
+    data: Partial<SadhanaRecord>,
+    targetUserId?: string,
+    targetFolkId?: string
+  ) => {
+    const effectiveUserId = targetUserId || currentUser.id;
+    const effectiveFolkId = targetFolkId || currentUser.folk_id;
+    const isSelf = effectiveUserId === currentUser.id;
+
     const parts = date.split('-').map(Number);
     const dayOfWeek = new Date(parts[0], parts[1] - 1, parts[2]).getDay();
     const isSunday = dayOfWeek === 0;
@@ -646,20 +685,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const earnedCC = date === todayStr ? 10 : 5;
     const newBalance = ccBalance + earnedCC;
 
-    // CC Ledger
-    const newTx: CCTransaction = {
-      id: `tx-${Date.now()}`,
-      user_id: currentUser.id,
-      amount: earnedCC,
-      balance_after: newBalance,
-      reason: date === todayStr ? 'Same-day Sādhana submission' : `Sādhana recorded for ${date}`,
-      created_at: new Date().toISOString(),
-    };
+    // CC Ledger (only for self)
+    if (isSelf) {
+      const newTx: CCTransaction = {
+        id: `tx-${Date.now()}`,
+        user_id: currentUser.id,
+        amount: earnedCC,
+        balance_after: newBalance,
+        reason: date === todayStr ? 'Same-day Sādhana submission' : `Sādhana recorded for ${date}`,
+        created_at: new Date().toISOString(),
+      };
+      setCcTransactions((prev) => [newTx, ...prev]);
+    }
 
-    // Update Streak if it was today
-    if (date === todayStr && !todaySadhanaSubmitted) {
-      const newStreakCount = streak.current_reporting_streak + 1;
-      const isNewPersonalBest = newStreakCount > streak.longest_reporting_streak;
+    // Authentic Consecutive Day Streak Calculation
+    let newStreakCount = 1;
+    let isNewPersonalBest = false;
+    if (isSelf && date === todayStr) {
+      const yesterdayStr = getIndianYesterdayStr();
+      if (streak.last_reported_date === yesterdayStr) {
+        newStreakCount = streak.current_reporting_streak + 1;
+      } else if (streak.last_reported_date === todayStr) {
+        newStreakCount = streak.current_reporting_streak;
+      } else {
+        newStreakCount = 1;
+      }
+      isNewPersonalBest = newStreakCount > streak.longest_reporting_streak;
+
       setStreak((prev) => ({
         ...prev,
         current_reporting_streak: newStreakCount,
@@ -671,8 +723,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Save Sādhana Record for that date
     const record: SadhanaRecord = {
-      id: `rec-${date}`,
-      user_id: currentUser.id,
+      id: `rec-${effectiveUserId}-${date}`,
+      user_id: effectiveUserId,
       record_date: date,
       mangala_arati_time: data.mangala_arati_time || null,
       japa_start_time: data.japa_start_time || null,
@@ -694,28 +746,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updated_at: new Date().toISOString(),
     };
 
-    setSadhanaRecords((prev) => ({
-      ...prev,
-      [date]: record,
-    }));
+    if (isSelf) {
+      setSadhanaRecords((prev) => ({
+        ...prev,
+        [date]: record,
+      }));
+    }
 
     // Persist to Supabase if live backend is connected
     if (isSupabaseConfigured) {
       apiUpsertSadhanaRecord({
         ...record,
-        user_id: currentUser.id,
+        user_id: effectiveUserId,
       });
-      apiUpdateStreak(currentUser.id, {
-        current_reporting_streak:
-          streak.current_reporting_streak + (date === todayStr && !todaySadhanaSubmitted ? 1 : 0),
-        longest_reporting_streak: streak.longest_reporting_streak,
-        last_reported_date: date,
-        next_milestone: streak.next_milestone,
-      });
+
+      if (isSelf && date === todayStr) {
+        apiUpdateStreak(currentUser.id, {
+          current_reporting_streak: newStreakCount,
+          longest_reporting_streak: isNewPersonalBest ? newStreakCount : streak.longest_reporting_streak,
+          last_reported_date: date,
+          next_milestone: streak.next_milestone,
+        });
+      } else if (!isSelf) {
+        apiGetStreak(effectiveUserId).then(({ data: s }) => {
+          const curr = s?.current_reporting_streak || 0;
+          const longest = s?.longest_reporting_streak || 0;
+          apiUpdateStreak(effectiveUserId, {
+            current_reporting_streak: curr + 1,
+            longest_reporting_streak: Math.max(longest, curr + 1),
+            last_reported_date: date,
+          });
+        });
+      }
     }
 
-    // Update accumulated reading time
-    if (readingMins > 0) {
+    // Update accumulated reading time for self
+    if (isSelf && readingMins > 0) {
       setReadingState((prev) => ({
         ...prev,
         total_minutes_read: prev.total_minutes_read + readingMins,
@@ -724,17 +790,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }));
     }
 
-    // REAL-TIME GUIDE ROSTER SYNCHRONIZATION ("Things should be updated asap the boys fill its sadhna !!")
+    // REAL-TIME GUIDE ROSTER SYNCHRONIZATION
     setGuideDevotees((prev) =>
       prev.map((d) => {
-        if (d.folk_id === currentUser.folk_id || d.id === currentUser.id) {
+        if (d.folk_id === effectiveFolkId || d.id === effectiveUserId) {
           return {
             ...d,
-            submitted: true,
-            points_today: finalPoints,
-            last_sadhana_label: "Today's Sādhana",
+            submitted: (date === todayStr && finalPoints > 0) || d.submitted,
+            points_today: date === todayStr ? finalPoints : d.points_today,
+            last_sadhana_label: date === todayStr ? "Today's Sādhana" : `Previous: ${date}`,
             last_points: finalPoints,
-            last_submitted_date: 'Today, Just now',
+            last_submitted_date: date === todayStr ? 'Today, Just now' : date,
             pillars: {
               mangala: Boolean(data.mangala_arati_time),
               japa: Boolean(data.japa_start_time),
@@ -764,28 +830,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       })
     );
 
-    setCcTransactions([newTx, ...ccTransactions]);
-    setReminder(null);
+    if (isSelf) {
+      setReminder(null);
 
-    // Duolingo-style Streak Celebration Trigger for Today's Sādhana
-    if (date === todayStr) {
-      const oldStreak = streak.current_reporting_streak;
-      const newStreak = !todaySadhanaSubmitted ? oldStreak + 1 : oldStreak;
-      setStreakOldCount(oldStreak);
-      setStreakNewCount(newStreak);
-      setShowDuolingoStreakAnimation(true);
-    }
+      // Duolingo-style Streak Celebration Trigger for Today's Sādhana
+      if (date === todayStr) {
+        const oldStreak = streak.current_reporting_streak;
+        setStreakOldCount(oldStreak);
+        setStreakNewCount(newStreakCount);
+        setShowDuolingoStreakAnimation(true);
+      }
 
-    // Confetti
-    try {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.7 },
-        colors: ['#E07A2B', '#E5A93C', '#2E7D32', '#1B1917'],
-      });
-    } catch {
-      // Fallback
+      // Confetti
+      try {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 },
+          colors: ['#E07A2B', '#E5A93C', '#2E7D32', '#1B1917'],
+        });
+      } catch {
+        // Fallback
+      }
     }
   };
 
@@ -942,11 +1008,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       apiReviewApprovalRequest(requestId, 'approved', leadName);
     }
 
-    // Commit the sadhana record for that date with is_late_submission = true (Blue color!)
-    submitSadhanaForDate(target.record_date, {
-      ...target.data,
-      is_late_submission: true,
-    });
+    // Commit the sadhana record for that date with is_late_submission = true under the devotee's user_id
+    submitSadhanaForDate(
+      target.record_date,
+      {
+        ...target.data,
+        is_late_submission: true,
+      },
+      target.user_id,
+      target.folk_id
+    );
   };
 
   const rejectSadhanaRequest = (requestId: string, leadName: string, reason?: string) => {

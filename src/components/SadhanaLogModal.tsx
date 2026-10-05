@@ -98,7 +98,7 @@ export default function SadhanaLogModal() {
   // 3-Day Lock Rule for late Sādhana submission (IST)
   const isOlderThan3Days = isOlderThan3DaysIST(selectedDateForModal, currentTodayStr);
   const diffDays = Math.max(0, getDaysDifference(currentTodayStr, selectedDateForModal));
-  const [lateReason, setLateReason] = useState<string>('Semester exams and temple seva');
+  const [lateReason, setLateReason] = useState<string>('');
 
   // Sunday identification: Darshan Ārati is enabled ONLY on Sundays!
   const isSunday = isSundayDate(selectedDateForModal);

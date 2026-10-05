@@ -287,7 +287,7 @@ export default function SignupView() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Pratik"
+                  placeholder="Enter your full name"
                   required
                   className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15 text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs"
                 />

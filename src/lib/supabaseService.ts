@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import type { UserProfile, SadhanaRecord, StreakData, SadhanaApprovalRequest, UserReadingState } from '@/types/database';
+import { getIndianTodayStr } from './dateUtils';
 
 // ==============================================================================
 // 1. AUTHENTICATION SERVICES
@@ -305,7 +306,7 @@ export async function apiUpdateStreak(userId: string, streak: Partial<StreakData
 // 5. LATE SĀDHANA APPROVAL REQUESTS SERVICES (>3 Days Lock)
 // ==============================================================================
 
-export async function apiGetApprovalRequests() {
+export async function apiGetApprovalRequests(): Promise<{ data: SadhanaApprovalRequest[] | null; error: any }> {
   if (!isSupabaseConfigured) return { data: null, error: null };
 
   const { data, error } = await supabase
@@ -313,7 +314,23 @@ export async function apiGetApprovalRequests() {
     .select('*')
     .order('created_at', { ascending: false });
 
-  return { data, error };
+  if (error || !data) return { data: null, error };
+
+  const mapped: SadhanaApprovalRequest[] = data.map((r: any) => ({
+    id: r.id,
+    user_id: r.user_id,
+    user_name: r.devotee_name || r.user_name || 'Devotee',
+    folk_id: r.devotee_folk_id || r.folk_id || 'FOLK-XXXX',
+    record_date: r.record_date,
+    data: r.sadhana_payload || r.data || {},
+    status: r.status,
+    reason: r.reason,
+    requested_at: r.created_at || r.requested_at || new Date().toISOString(),
+    reviewed_by: r.reviewed_by,
+    reviewed_at: r.reviewed_at,
+  }));
+
+  return { data: mapped, error: null };
 }
 
 export async function apiCreateApprovalRequest(payload: {
@@ -467,7 +484,7 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
       return { data: [], error: pError };
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getIndianTodayStr();
 
     const devotees = await Promise.all(
       profiles.map(async (p: any) => {
@@ -493,6 +510,10 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
 
         const isToday = latestRecord?.record_date === todayStr;
         const submitted = Boolean(isToday && latestRecord?.points_earned > 0);
+
+        const recDate = latestRecord?.record_date || todayStr;
+        const parts = recDate.split('-').map(Number);
+        const isSunday = new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
 
         return {
           id: p.id,
@@ -532,12 +553,20 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
               : latestRecord.japa_rounds >= 12
               ? 'light_green'
               : 'yellow',
-            darshan: latestRecord?.darshan_arati_time ? 'green' : 'grey',
+            darshan: !isSunday
+              ? 'grey'
+              : !latestRecord?.darshan_arati_time
+              ? 'red'
+              : latestRecord.darshan_arati_time <= '07:30 AM'
+              ? 'green'
+              : latestRecord.darshan_arati_time <= '07:45 AM'
+              ? 'light_green'
+              : 'yellow',
             bhagavatam: !latestRecord?.srimad_bhagavatam_time
               ? 'red'
-              : latestRecord.srimad_bhagavatam_time <= '08:05 AM'
+              : latestRecord.srimad_bhagavatam_time <= '07:35 AM'
               ? 'green'
-              : latestRecord.srimad_bhagavatam_time <= '08:20 AM'
+              : latestRecord.srimad_bhagavatam_time <= '07:45 AM'
               ? 'light_green'
               : 'yellow',
             jf: latestRecord?.japa_finish_slot_time ? 'green' : 'red',

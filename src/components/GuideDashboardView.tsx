@@ -417,7 +417,7 @@ export default function GuideDashboardView() {
                 <div className="text-[11px] text-[#59534E] dark:text-stone-300 bg-stone-50 dark:bg-stone-900/60 p-2 rounded-xl border border-stone-200/60 dark:border-stone-700/60">
                   <span className="font-bold text-[#1B1917] dark:text-stone-100">Reason:</span> &quot;{req.reason}&quot;
                   <div className="mt-1 text-[10px] text-[#786E65] dark:text-stone-400">
-                    Pillars: Maṅgala {req.data.mangala_arati_time || 'No'} • Japa {req.data.japa_rounds || 16} rds • SB {req.data.srimad_bhagavatam_time || 'No'} • Reading {req.data.book_reading_minutes || 0}m
+                    Pillars: Maṅgala {req.data?.mangala_arati_time || 'No'} • Japa {req.data?.japa_rounds || 16} rds • SB {req.data?.srimad_bhagavatam_time || 'No'} • Reading {req.data?.book_reading_minutes || 0}m
                   </div>
                 </div>
 

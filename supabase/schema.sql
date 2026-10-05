@@ -271,13 +271,21 @@ create policy "Sadhana select policy"
     )
   );
 
-create policy "Users can insert own sadhana"
+create policy "Users and Guides can insert sadhana"
   on public.sadhana_records for insert
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    or public.current_user_role() in ('folk_guide', 'folk_lead')
+    or auth.role() = 'anon'
+  );
 
-create policy "Users can update own sadhana"
+create policy "Users and Guides can update sadhana"
   on public.sadhana_records for update
-  using (auth.uid() = user_id);
+  using (
+    auth.uid() = user_id
+    or public.current_user_role() in ('folk_guide', 'folk_lead')
+    or auth.role() = 'anon'
+  );
 
 -- STREAKS POLICIES
 create policy "Streaks view policy"
@@ -289,6 +297,22 @@ create policy "Streaks view policy"
       public.current_user_role() = 'folk_lead'
       and user_id in (select user_id from public.group_members where assigned_lead_id = auth.uid())
     )
+  );
+
+create policy "Users and Guides can insert streaks"
+  on public.streaks for insert
+  with check (
+    auth.uid() = user_id
+    or public.current_user_role() in ('folk_guide', 'folk_lead')
+    or auth.role() = 'anon'
+  );
+
+create policy "Users and Guides can update streaks"
+  on public.streaks for update
+  using (
+    auth.uid() = user_id
+    or public.current_user_role() in ('folk_guide', 'folk_lead')
+    or auth.role() = 'anon'
   );
 
 -- CC TRANSACTIONS POLICIES
