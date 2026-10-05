@@ -73,7 +73,7 @@ export default function FolkBoyHomeView() {
   const completionPercentage = Math.round((completedCount / totalPillars) * 100);
 
   return (
-    <div className="relative min-h-screen pb-28 max-w-md mx-auto px-4 pt-3 select-none">
+    <div className="relative min-h-screen pb-36 max-w-md mx-auto px-4 pt-3 select-none">
       {/* Background Ambient Soft Lighting */}
       <div className="fixed top-0 right-0 w-80 h-80 bg-[#E07A2B]/8 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="fixed bottom-10 left-0 w-72 h-72 bg-[#E5A93C]/10 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -131,45 +131,7 @@ export default function FolkBoyHomeView() {
         </button>
       </header>
 
-      {/* Role Demonstration Switcher */}
-      <div className="mb-3 px-3 py-1 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
-        <span className="text-[11px] font-medium text-[#7A4B1A] flex items-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#E07A2B]" />
-          Review Mode:
-        </span>
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => switchRole('folk_boy')}
-            className={`text-[10px] px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
-              currentUser.role === 'folk_boy'
-                ? 'bg-[#E07A2B] text-white shadow-2xs'
-                : 'bg-white/60 text-[#7A4B1A] hover:bg-white'
-            }`}
-          >
-            Folk Boy
-          </button>
-          <button
-            onClick={() => switchRole('folk_lead')}
-            className={`text-[10px] px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
-              currentUser.role === 'folk_lead'
-                ? 'bg-[#9C4507] text-white shadow-2xs'
-                : 'bg-white/60 text-[#7A4B1A] hover:bg-white'
-            }`}
-          >
-            Folk Lead
-          </button>
-          <button
-            onClick={() => switchRole('folk_guide')}
-            className={`text-[10px] px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
-              currentUser.role === 'folk_guide'
-                ? 'bg-[#1B1917] text-white shadow-2xs'
-                : 'bg-white/60 text-[#7A4B1A] hover:bg-white'
-            }`}
-          >
-            Guide →
-          </button>
-        </div>
-      </div>
+
 
       {/* FOLK LEAD ACTION HUB (Export Reports & Late Sadhana Approvals) */}
       {/* "folk Lead will also have same view like this folk boy, but this request and export things will also go to him ... (that's the onlly thing)" */}

@@ -79,7 +79,7 @@ export default function SadhanaCalendarView() {
   const paddingDays = Array.from({ length: startDayOfWeek });
 
   return (
-    <div className="pb-28 max-w-md mx-auto px-4 pt-3 select-none">
+    <div className="pb-36 max-w-md mx-auto px-4 pt-3 select-none">
       {/* Top Header */}
       <header className="flex items-center justify-between mb-3">
         <button

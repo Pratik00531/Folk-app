@@ -60,6 +60,8 @@ interface AppContextType {
     fullName: string;
     phone: string;
     role?: UserRole;
+    guideId?: string | null;
+    guideName?: string | null;
   }) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   currentScreen: ScreenType;
@@ -347,11 +349,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     fullName: string;
     phone: string;
     role?: UserRole;
+    guideId?: string | null;
+    guideName?: string | null;
   }) => {
+    // Immediately update local state with user's entered name and details so "Hare Krishna Devotee" is never shown!
+    setCurrentUser((prev) => ({
+      ...prev,
+      full_name: params.fullName,
+      phone: params.phone,
+      email: params.email,
+      role: params.role || 'folk_boy',
+      guide_name: params.guideName || prev.guide_name,
+      guide_id: params.guideId || prev.guide_id,
+    }));
+
     if (!isSupabaseConfigured) {
+      setScreen('home');
       return { error: null };
     }
+
     const { error } = await apiSignUp(params);
+    if (!error) {
+      // Auto sign-in to establish session & pull full profile
+      await signIn(params.email, params.password);
+      setScreen('home');
+    }
     return { error };
   };
 
@@ -371,7 +393,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updated_at: new Date().toISOString(),
     }));
     if (isSupabaseConfigured) {
-      apiUpdateProfile(currentUser.id, updates);
+      apiUpdateProfile(currentUser.id, updates).then(() => {
+        // Refresh Guide roster so the Guide sees the updated devotee avatar immediately!
+        apiGetGuideDevotees().then(({ data: devs }) => {
+          if (devs && devs.length > 0) setGuideDevotees(devs);
+        });
+      });
     }
   };
 

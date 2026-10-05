@@ -41,8 +41,6 @@ export default function SignupView() {
   // Guides from Supabase
   const [registeredGuides, setRegisteredGuides] = useState<{ id: string; name: string }[]>([]);
   const [selectedGuide, setSelectedGuide] = useState('');
-  const [customGuideName, setCustomGuideName] = useState('');
-  const [isCustomGuide, setIsCustomGuide] = useState(false);
 
   // Load real registered guides from Supabase
   useEffect(() => {
@@ -52,15 +50,9 @@ export default function SignupView() {
           if (data && data.length > 0) {
             setRegisteredGuides(data);
             setSelectedGuide(data[0].name);
-          } else {
-            setIsCustomGuide(true);
           }
         })
-        .catch(() => {
-          setIsCustomGuide(true);
-        });
-    } else {
-      setIsCustomGuide(true);
+        .catch(() => {});
     }
   }, []);
 
@@ -116,30 +108,36 @@ export default function SignupView() {
           return;
         }
         setGuidePasscodeError('');
-      }
-
-      if (isLiveBackend) {
-        setLoading(true);
-        setAuthError(null);
-        const userEmail = email.trim() || `${phone}@folk.org`;
-        const guideToAssign = isCustomGuide ? customGuideName.trim() : selectedGuide;
-
-        const { error } = await signUp({
-          email: userEmail,
-          password,
-          fullName: fullName.trim(),
-          phone: phone.trim(),
-          role: role,
-        });
-
-        setLoading(false);
-        if (error) {
-          setAuthError(error.message || 'Registration failed. Please check your credentials.');
+      } else {
+        // Devotee must select a registered Guide
+        if (!selectedGuide || registeredGuides.length === 0) {
+          setAuthError('Your Guide must register their account first. Once they register, you can select them from the list.');
           return;
         }
       }
 
-      // User created — FOLK ID is generated in background and available in profile
+      setLoading(true);
+      setAuthError(null);
+      const userEmail = email.trim() || `${phone.trim()}@folk.org`;
+      const matchedGuide = registeredGuides.find((g) => g.name === selectedGuide);
+
+      const { error } = await signUp({
+        email: userEmail,
+        password,
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        role: role,
+        guideName: role === 'folk_guide' ? null : selectedGuide,
+        guideId: role === 'folk_guide' ? null : (matchedGuide?.id || null),
+      });
+
+      setLoading(false);
+      if (error) {
+        setAuthError(error.message || 'Registration failed. Please check your credentials.');
+        return;
+      }
+
+      // User created and signed in
       setScreen('home');
     }
   };
@@ -409,7 +407,7 @@ export default function SignupView() {
                   Who is your FOLK Guide?
                 </label>
 
-                {registeredGuides.length > 0 && !isCustomGuide ? (
+                {registeredGuides.length > 0 ? (
                   <div className="space-y-2">
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
@@ -417,54 +415,30 @@ export default function SignupView() {
                       </div>
                       <select
                         value={selectedGuide}
-                        onChange={(e) => {
-                          if (e.target.value === '__custom__') {
-                            setIsCustomGuide(true);
-                          } else {
-                            setSelectedGuide(e.target.value);
-                          }
-                        }}
-                        className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#1B1917] outline-none shadow-xs cursor-pointer"
+                        onChange={(e) => setSelectedGuide(e.target.value)}
+                        required
+                        className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#1B1917] outline-none shadow-xs cursor-pointer focus:ring-2 focus:ring-[#E07A2B]/15"
                       >
                         {registeredGuides.map((g) => (
                           <option key={g.id} value={g.name}>
                             {g.name}
                           </option>
                         ))}
-                        <option value="__custom__">+ Enter Another Guide Name...</option>
                       </select>
                     </div>
                     <p className="text-[10px] text-[#786E65] ml-1">
-                      Showing real guides registered in the database.
+                      Showing authorized temple guides registered in the database.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
-                        <Shield className="w-4 h-4 text-[#E07A2B]" />
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 space-y-2">
+                    <div className="flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-[#9C4507] shrink-0 mt-0.5" />
+                      <div className="text-xs font-medium text-[#7A4B1A] leading-relaxed">
+                        <span className="font-bold block text-[#9C4507] mb-0.5">No Registered Guides Yet</span>
+                        Your Guide must register their account first using the Guide Passcode. Once registered, their name will appear here for you to select.
                       </div>
-                      <input
-                        type="text"
-                        value={customGuideName}
-                        onChange={(e) => setCustomGuideName(e.target.value)}
-                        placeholder="Enter your Guide's Name"
-                        required
-                        className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15 text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs"
-                      />
                     </div>
-                    {registeredGuides.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setIsCustomGuide(false)}
-                        className="text-[10px] font-bold text-[#E07A2B] hover:underline ml-1"
-                      >
-                        ← Select from registered guides list
-                      </button>
-                    )}
-                    <p className="text-[10px] text-[#786E65] ml-1">
-                      Enter the devotee name of your assigned temple guide.
-                    </p>
                   </div>
                 )}
               </div>

@@ -38,7 +38,7 @@ export default function BookReadingView() {
   const minsRead = readingState.total_minutes_read % 60;
 
   return (
-    <div className="pb-24 max-w-md mx-auto px-4 pt-3 select-none">
+    <div className="pb-36 max-w-md mx-auto px-4 pt-3 select-none">
       {/* Top Header */}
       <header className="flex items-center justify-between mb-4">
         <div>

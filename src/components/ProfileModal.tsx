@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import {
   X,
@@ -20,6 +20,7 @@ import {
   LogOut,
   DownloadCloud,
   RefreshCw,
+  Camera,
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkForAppUpdates } from '@/lib/appVersionService';
 
@@ -47,6 +48,9 @@ export default function ProfileModal() {
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
   // Sync state whenever modal opens or user changes
   useEffect(() => {
     if (isProfileModalOpen) {
@@ -59,8 +63,53 @@ export default function ProfileModal() {
       setPhoneError('');
       setSaveSuccess(false);
       setUpdateStatus(null);
+      setAvatarPreview(currentUser.avatar_url || null);
     }
   }, [isProfileModalOpen, currentUser]);
+
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Compress to max 400x400 for optimal performance & instant database sync
+        const canvas = document.createElement('canvas');
+        const maxDim = 400;
+        let w = img.width;
+        let h = img.height;
+        if (w > h) {
+          if (w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          }
+        } else {
+          if (h > maxDim) {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/jpeg', 0.82);
+          setAvatarPreview(compressed);
+          // Instantly sync to user profile and database
+          updateUserProfile({ avatar_url: compressed });
+          setSaveSuccess(true);
+          setTimeout(() => setSaveSuccess(false), 2500);
+        }
+      };
+      if (typeof event.target?.result === 'string') {
+        img.src = event.target.result;
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCheckUpdate = async () => {
     setCheckingUpdate(true);
@@ -159,16 +208,34 @@ export default function ProfileModal() {
             </div>
           )}
 
-          {/* User Hero Badge */}
+          {/* User Hero Badge & Photo Update */}
           <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-amber-50 to-orange-50/70 border border-amber-200/70 flex items-center gap-3.5">
-            <div className="relative w-14 h-14 rounded-full p-0.5 bg-gradient-to-tr from-[#E07A2B] to-[#E5A93C] shadow-xs shrink-0">
-              <div className="w-full h-full rounded-full bg-white overflow-hidden flex items-center justify-center">
-                <img
-                  src={currentUser.avatar_url || '/assets/images/Chanting.png'}
-                  alt={currentUser.full_name}
-                  className="w-full h-full object-cover"
-                />
+            {/* Clickable Profile Avatar with Camera Icon */}
+            <div className="relative group shrink-0">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="relative w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-[#E07A2B] to-[#E5A93C] shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all"
+                title="Tap to update your profile photo"
+              >
+                <div className="w-full h-full rounded-full bg-white overflow-hidden flex items-center justify-center">
+                  <img
+                    src={avatarPreview || currentUser.avatar_url || '/assets/images/Chanting.png'}
+                    alt={currentUser.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {/* Camera Badge Overlay */}
+                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[#E07A2B] text-white flex items-center justify-center shadow-md border-2 border-white">
+                  <Camera className="w-3.5 h-3.5" />
+                </div>
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarSelect}
+                className="hidden"
+              />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">

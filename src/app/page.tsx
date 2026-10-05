@@ -19,8 +19,17 @@ import AppUpdateModal from '@/components/AppUpdateModal';
 function MainContent() {
   const {
     currentScreen,
+    setScreen,
     currentUser,
     activeFolkBoyTab,
+    isLogModalOpen,
+    closeLogModal,
+    isProfileModalOpen,
+    setIsProfileModalOpen,
+    isPointsModalOpen,
+    setIsPointsModalOpen,
+    isExportModalOpen,
+    setIsExportModalOpen,
   } = useApp();
 
   // Register Progressive Web App service worker for fast offline caching & auto updates
@@ -43,6 +52,47 @@ function MainContent() {
         .catch((err) => console.log('SW registration note:', err));
     }
   }, []);
+
+  // Native Android Hardware Back Button & Gesture Handler
+  useEffect(() => {
+    let handler: any;
+    import('@capacitor/app')
+      .then(({ App }) => {
+        handler = App.addListener('backButton', () => {
+          if (isLogModalOpen) {
+            closeLogModal();
+          } else if (isProfileModalOpen) {
+            setIsProfileModalOpen(false);
+          } else if (isPointsModalOpen) {
+            setIsPointsModalOpen(false);
+          } else if (isExportModalOpen) {
+            setIsExportModalOpen(false);
+          } else if (currentScreen === 'signup' || currentScreen === 'login') {
+            setScreen('welcome');
+          } else {
+            App.exitApp();
+          }
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      if (handler && typeof handler.remove === 'function') {
+        handler.remove();
+      }
+    };
+  }, [
+    isLogModalOpen,
+    closeLogModal,
+    isProfileModalOpen,
+    setIsProfileModalOpen,
+    isPointsModalOpen,
+    setIsPointsModalOpen,
+    isExportModalOpen,
+    setIsExportModalOpen,
+    currentScreen,
+    setScreen,
+  ]);
 
   const isGuide = currentUser.role === 'folk_guide';
 

@@ -200,6 +200,19 @@ export default function SadhanaLogModal() {
     }
   }, [existingRecord, selectedDateForModal, isSunday]);
 
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeLogModal();
+      }
+    };
+    if (isLogModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isLogModalOpen, closeLogModal]);
+
   if (!isLogModalOpen) return null;
 
   // Format date display: e.g. "Thu, 3 October 2026"
@@ -293,32 +306,32 @@ export default function SadhanaLogModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-200">
       {/* Background warm aesthetic canvas */}
-      <div className="w-full max-w-[440px] bg-[#FAF5EE] sm:rounded-[36px] shadow-2xl border border-white/70 overflow-hidden flex flex-col min-h-screen sm:min-h-0 sm:max-h-[96vh] relative">
+      <div className="w-full max-w-[440px] h-full sm:h-auto sm:max-h-[92vh] bg-[#FAF5EE] dark:bg-[#181614] sm:rounded-[36px] shadow-2xl border border-white/70 dark:border-stone-800 overflow-hidden flex flex-col relative">
         {/* Subtle lotus / floral background watermark glow */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-radial from-[#F5DEB3]/35 to-transparent pointer-events-none rounded-full blur-3xl -z-10" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-radial from-[#E07A2B]/10 to-transparent pointer-events-none rounded-full blur-3xl -z-10" />
 
-        {/* Top Header matching Reference Image 1 */}
-        <div className="pt-6 pb-3 px-5 flex items-start justify-between relative">
-          {/* Back chevron button */}
+        {/* Sticky Top Header that NEVER scrolls away */}
+        <div className="sticky top-0 z-40 bg-[#FAF5EE]/95 dark:bg-[#181614]/95 backdrop-blur-md pt-4 pb-3 px-4 flex items-center justify-between border-b border-stone-200/60 dark:border-stone-800 shrink-0 shadow-xs">
+          {/* Back button */}
           <button
             type="button"
             onClick={closeLogModal}
             aria-label="Back"
-            className="w-10 h-10 rounded-full bg-white/70 border border-stone-200/50 flex items-center justify-center text-[#4A453F] hover:bg-white transition-colors cursor-pointer shadow-2xs"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white dark:bg-stone-800 border border-stone-200/60 dark:border-stone-700 text-[#1B1917] dark:text-stone-200 font-bold text-xs hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors cursor-pointer shadow-2xs"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
+            <span>Exit</span>
           </button>
 
           {/* Central Lotus & Title */}
           <div className="flex flex-col items-center text-center">
-            <LotusIcon className="w-7 h-7 text-[#DC6820] mb-1" />
-            <h1 className="text-xl font-bold font-serif text-[#1B1917] tracking-tight">
+            <h1 className="text-base font-extrabold text-[#1B1917] dark:text-stone-100 leading-tight">
               Today's Sādhana
             </h1>
-            <p className="text-xs text-[#786E65] font-medium mt-0.5">
+            <p className="text-[11px] text-[#786E65] dark:text-stone-400 font-medium">
               {formattedSubtitle}
             </p>
           </div>
@@ -327,10 +340,10 @@ export default function SadhanaLogModal() {
           <button
             type="button"
             onClick={() => setIsPointsModalOpen(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/80 border border-stone-200/80 text-[11px] font-bold text-[#DC6820] hover:bg-white transition-all shadow-2xs cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white dark:bg-stone-800 border border-stone-200/80 dark:border-stone-700 text-[11px] font-bold text-[#DC6820] hover:bg-white shadow-2xs cursor-pointer"
           >
             <Star className="w-3.5 h-3.5 fill-[#DC6820]" />
-            <span>View Points</span>
+            <span>Points</span>
           </button>
         </div>
 
@@ -870,12 +883,19 @@ export default function SadhanaLogModal() {
           </div>
         </form>
 
-        {/* Floating Bottom Action: Save Today's Sādhana OR Request Acceptance */}
-        <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-[#FAF5EE] via-[#FAF5EE]/95 to-transparent">
+        {/* Floating Bottom Action: Exit / Cancel + Save Today's Sādhana */}
+        <div className="absolute bottom-0 inset-x-0 p-3.5 bg-gradient-to-t from-[#FAF5EE] dark:from-[#181614] via-[#FAF5EE]/95 dark:via-[#181614]/95 to-transparent flex items-center gap-2 z-30">
+          <button
+            type="button"
+            onClick={closeLogModal}
+            className="h-12 px-4 rounded-full bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-[#1B1917] dark:text-stone-200 font-bold text-xs shadow-xs hover:bg-stone-100 dark:hover:bg-stone-700 cursor-pointer active:scale-95 transition-all"
+          >
+            Exit
+          </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className={`w-full h-13 rounded-full text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg cursor-pointer active:scale-[0.99] transition-all ${
+            className={`flex-1 h-12 rounded-full text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg cursor-pointer active:scale-[0.99] transition-all ${
               isOlderThan3Days
                 ? 'bg-[#1B1917] hover:bg-stone-800 shadow-stone-900/20'
                 : 'bg-[#DC6820] hover:bg-[#C95B16] shadow-amber-900/15'

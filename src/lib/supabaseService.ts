@@ -12,6 +12,8 @@ export async function apiSignUp(params: {
   phone: string;
   role?: 'folk_boy' | 'folk_lead' | 'folk_guide';
   spiritualName?: string;
+  guideId?: string | null;
+  guideName?: string | null;
 }) {
   if (!isSupabaseConfigured) {
     return { data: null, error: new Error('Supabase is not configured yet. Running in offline mock mode.') };
@@ -26,9 +28,29 @@ export async function apiSignUp(params: {
         phone: params.phone,
         role: params.role || 'folk_boy',
         spiritual_name: params.spiritualName || null,
+        guide_id: params.guideId || null,
+        guide_name: params.guideName || null,
       },
     },
   });
+
+  if (!error && data?.user) {
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          full_name: params.fullName,
+          phone: params.phone,
+          role: params.role || 'folk_boy',
+          spiritual_name: params.spiritualName || null,
+          guide_id: params.guideId || null,
+          guide_name: params.guideName || null,
+        })
+        .eq('id', data.user.id);
+    } catch (e) {
+      console.warn('Profile direct sync note:', e);
+    }
+  }
 
   return { data, error };
 }
