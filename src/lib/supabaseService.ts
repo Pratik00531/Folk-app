@@ -55,11 +55,59 @@ export async function apiSignUp(params: {
   return { data, error };
 }
 
-export async function apiSignIn(email: string, password: string) {
+export async function apiSignIn(identifier: string, password: string) {
   if (!isSupabaseConfigured) {
     return { data: null, error: new Error('Supabase is not configured yet. Running in offline mock mode.') };
   }
-  return await supabase.auth.signInWithPassword({ email, password });
+
+  const clean = identifier.trim().toLowerCase();
+
+  // 1. If user entered an email address
+  if (clean.includes('@')) {
+    let res = await supabase.auth.signInWithPassword({ email: clean, password });
+    if (res.error && res.error.message.toLowerCase().includes('not confirmed')) {
+      try {
+        await supabase.rpc('auto_confirm_user_email', { p_identifier: clean });
+        res = await supabase.auth.signInWithPassword({ email: clean, password });
+      } catch {}
+    }
+    return res;
+  }
+
+  // 2. User entered a mobile number (e.g. 10 digits)
+  const cleanPhone = clean.replace(/\D/g, '');
+
+  // A. Check if this phone has a registered real email in profiles via RPC
+  try {
+    const { data: realEmail } = await supabase.rpc('resolve_login_email', { p_phone: cleanPhone });
+    if (realEmail && typeof realEmail === 'string' && realEmail.includes('@')) {
+      let res = await supabase.auth.signInWithPassword({ email: realEmail.toLowerCase(), password });
+      if (!res.error) return res;
+      if (res.error && res.error.message.toLowerCase().includes('not confirmed')) {
+        try {
+          await supabase.rpc('auto_confirm_user_email', { p_identifier: cleanPhone });
+          res = await supabase.auth.signInWithPassword({ email: realEmail.toLowerCase(), password });
+          if (!res.error) return res;
+        } catch {}
+      }
+    }
+  } catch (err) {
+    console.warn('resolve_login_email note:', err);
+  }
+
+  // B. Try standard phone fallback [phone]@folk.org
+  const fallbackEmail = `${cleanPhone}@folk.org`;
+  let res = await supabase.auth.signInWithPassword({ email: fallbackEmail, password });
+  if (!res.error) return res;
+
+  if (res.error && res.error.message.toLowerCase().includes('not confirmed')) {
+    try {
+      await supabase.rpc('auto_confirm_user_email', { p_identifier: cleanPhone });
+      res = await supabase.auth.signInWithPassword({ email: fallbackEmail, password });
+    } catch {}
+  }
+
+  return res;
 }
 
 export async function apiSignOut() {

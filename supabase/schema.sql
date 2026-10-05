@@ -373,6 +373,11 @@ begin
   insert into public.reading_progress (user_id) values (new.id) on conflict (user_id) do nothing;
   insert into public.notification_preferences (user_id) values (new.id) on conflict (user_id) do nothing;
 
+  -- Auto-confirm email so devotees can log in immediately without email confirmation obstacles
+  update auth.users
+  set email_confirmed_at = coalesce(email_confirmed_at, now())
+  where id = new.id;
+
   return new;
 end;
 $$;
@@ -524,3 +529,55 @@ end;
 $$;
 
 grant execute on function public.simple_reset_password to anon, authenticated;
+
+-- Resolve login email by mobile number
+create or replace function public.resolve_login_email(p_phone text)
+returns text
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_email text;
+  v_clean text;
+begin
+  v_clean := regexp_replace(p_phone, '\D', '', 'g');
+
+  select email into v_email
+  from public.profiles
+  where phone = p_phone or phone = v_clean
+  limit 1;
+
+  return v_email;
+end;
+$$;
+
+grant execute on function public.resolve_login_email to anon, authenticated;
+
+-- Auto-confirm email helper for unconfirmed accounts
+create or replace function public.auto_confirm_user_email(p_identifier text)
+returns boolean
+language plpgsql
+security definer set search_path = public, auth
+as $$
+declare
+  v_user_id uuid;
+  v_clean text;
+begin
+  v_clean := regexp_replace(p_identifier, '\D', '', 'g');
+
+  select id into v_user_id
+  from public.profiles
+  where phone = p_identifier or phone = v_clean or lower(email) = lower(p_identifier)
+  limit 1;
+
+  if v_user_id is not null then
+    update auth.users
+    set email_confirmed_at = coalesce(email_confirmed_at, now())
+    where id = v_user_id;
+    return true;
+  end if;
+  return false;
+end;
+$$;
+
+grant execute on function public.auto_confirm_user_email to anon, authenticated;

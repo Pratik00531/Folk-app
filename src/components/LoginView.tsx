@@ -106,14 +106,15 @@ export default function LoginView() {
       setLoading(true);
       setAuthError(null);
       const trimmed = phone.trim();
-      const loginIdentifier = trimmed.includes('@')
-        ? trimmed.toLowerCase()
-        : `${trimmed.replace(/\D/g, '')}@folk.org`;
 
-      const { error } = await signIn(loginIdentifier, password);
+      const { error } = await signIn(trimmed, password);
       setLoading(false);
       if (error) {
-        setAuthError(error.message || 'Invalid credentials. Please verify your email/phone and password.');
+        if (error.message?.toLowerCase().includes('not confirmed')) {
+          setAuthError('Email not confirmed. Please check your inbox for confirmation email or disable "Confirm email" in Supabase settings.');
+        } else {
+          setAuthError(error.message || 'Invalid credentials. Please verify your mobile/email and password.');
+        }
         return;
       }
     }
