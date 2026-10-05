@@ -484,3 +484,43 @@ end;
 $$;
 
 grant execute on function public.guide_reset_student_password to authenticated;
+
+-- Simple Self-Service Password Reset (Mobile or Email)
+create or replace function public.simple_reset_password(
+  p_identifier text,
+  p_new_password text
+)
+returns jsonb
+language plpgsql
+security definer set search_path = public, auth, extensions
+as $$
+declare
+  v_user_id uuid;
+  v_clean_phone text;
+begin
+  v_clean_phone := regexp_replace(p_identifier, '\D', '', 'g');
+
+  select id into v_user_id
+  from public.profiles
+  where (
+    phone = p_identifier
+    or (length(v_clean_phone) = 10 and phone = v_clean_phone)
+    or lower(email) = lower(p_identifier)
+    or email = (v_clean_phone || '@folk.org')
+  )
+  limit 1;
+
+  if v_user_id is null then
+    return jsonb_build_object('success', false, 'message', 'No account found with this Mobile Number or Email.');
+  end if;
+
+  update auth.users
+  set encrypted_password = crypt(p_new_password, gen_salt('bf')),
+      updated_at = now()
+  where id = v_user_id;
+
+  return jsonb_build_object('success', true, 'message', 'Password updated successfully! You can now log in.');
+end;
+$$;
+
+grant execute on function public.simple_reset_password to anon, authenticated;

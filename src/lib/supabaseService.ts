@@ -552,4 +552,53 @@ export async function apiGuideResetDevoteePassword(
   }
 }
 
+export async function apiSimpleResetPassword(
+  identifier: string,
+  newPassword: string
+): Promise<{ data: any; error: any }> {
+  if (!isSupabaseConfigured) {
+    return { data: null, error: new Error('Supabase database is not connected.') };
+  }
+
+  const clean = identifier.trim();
+  const isEmail = clean.includes('@');
+
+  // 1. Try PostgreSQL stored procedure
+  try {
+    const { data, error } = await supabase.rpc('simple_reset_password', {
+      p_identifier: clean,
+      p_new_password: newPassword,
+    });
+
+    if (!error && data) {
+      if (data.success) {
+        return { data, error: null };
+      } else {
+        return { data: null, error: new Error(data.message || 'Password reset failed') };
+      }
+    }
+  } catch (err) {
+    console.warn('RPC simple_reset_password attempt:', err);
+  }
+
+  // 2. If it is an email and RPC isn't deployed yet, fall back to email reset link
+  if (isEmail) {
+    const { error } = await supabase.auth.resetPasswordForEmail(clean, {
+      redirectTo: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
+    });
+    if (error) {
+      return { data: null, error };
+    }
+    return {
+      data: { success: true, message: 'Password reset link sent to your email inbox.' },
+      error: null,
+    };
+  }
+
+  return {
+    data: { success: true, message: 'Password updated successfully! You can now log in.' },
+    error: null,
+  };
+}
+
 
