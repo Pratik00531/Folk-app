@@ -130,7 +130,8 @@ export default function LoginView() {
   };
 
   const handlePhoneChange = (val: string) => {
-    setPhone(val);
+    const formatted = val.includes('@') ? val : val.replace(/\D/g, '').slice(0, 10);
+    setPhone(formatted);
     setNoAccountFound(false);
     if (errors.phone) {
       setErrors((prev) => ({ ...prev, phone: undefined }));
@@ -175,29 +176,32 @@ export default function LoginView() {
               <AlertCircle className="w-4 h-4 shrink-0 text-[#E07A2B] mt-0.5" />
               <span className="leading-snug">{authError}</span>
             </div>
-            {noAccountFound && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    sessionStorage.setItem(
-                      'folk_prefill_signup',
-                      JSON.stringify({
-                        identifier: phone.trim(),
-                        role: selectedRoleType === 'guide' ? 'folk_guide' : 'folk_boy',
-                      })
-                    );
-                  }
-                  setScreen('signup');
-                }}
-                className="w-full h-11 rounded-xl saffron-gradient-btn text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer active:scale-95 transition-all"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>
-                  Create {selectedRoleType === 'guide' ? 'FOLK Guide' : 'Devotee'} Account with {phone.trim()} →
-                </span>
-              </button>
-            )}
+            {noAccountFound && (() => {
+              const cleanVal = phone.includes('@') ? phone.trim() : phone.replace(/\D/g, '').slice(0, 10);
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      sessionStorage.setItem(
+                        'folk_prefill_signup',
+                        JSON.stringify({
+                          identifier: cleanVal,
+                          role: selectedRoleType === 'guide' ? 'folk_guide' : 'folk_boy',
+                        })
+                      );
+                    }
+                    setScreen('signup');
+                  }}
+                  className="w-full h-11 rounded-xl saffron-gradient-btn text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer active:scale-95 transition-all"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>
+                    Create {selectedRoleType === 'guide' ? 'FOLK Guide' : 'Devotee'} Account with {cleanVal || phone.trim()} →
+                  </span>
+                </button>
+              );
+            })()}
           </div>
         )}
       </div>
