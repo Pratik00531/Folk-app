@@ -47,6 +47,10 @@ export async function apiSignUp(params: {
     } catch (e) {
       console.warn('Profile direct sync note:', e);
     }
+
+    try {
+      await supabase.rpc('sync_user_phone', { p_phone: params.phone });
+    } catch {}
   }
 
   return { data, error };

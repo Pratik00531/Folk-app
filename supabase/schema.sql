@@ -373,10 +373,30 @@ begin
   insert into public.reading_progress (user_id) values (new.id) on conflict (user_id) do nothing;
   insert into public.notification_preferences (user_id) values (new.id) on conflict (user_id) do nothing;
 
-  -- Auto-confirm email so devotees can log in immediately without email confirmation obstacles
-  update auth.users
-  set email_confirmed_at = coalesce(email_confirmed_at, now())
-  where id = new.id;
+  -- Auto-confirm email and sync phone number to auth.users so Phone and Providers 'Email, Phone' display in Supabase Auth
+  declare
+    clean_phone_digits text;
+    formatted_auth_phone text;
+  begin
+    clean_phone_digits := regexp_replace(coalesce(new.raw_user_meta_data->>'phone', ''), '\D', '', 'g');
+    if length(clean_phone_digits) = 10 then
+      formatted_auth_phone := '91' || clean_phone_digits;
+    elsif length(clean_phone_digits) > 10 then
+      formatted_auth_phone := clean_phone_digits;
+    else
+      formatted_auth_phone := null;
+    end if;
+
+    update auth.users
+    set email_confirmed_at = coalesce(email_confirmed_at, now()),
+        phone = coalesce(formatted_auth_phone, phone),
+        phone_confirmed_at = case when formatted_auth_phone is not null then coalesce(phone_confirmed_at, now()) else phone_confirmed_at end
+    where id = new.id;
+  exception when others then
+    update auth.users
+    set email_confirmed_at = coalesce(email_confirmed_at, now())
+    where id = new.id;
+  end;
 
   return new;
 end;
@@ -618,3 +638,49 @@ end;
 $$;
 
 grant execute on function public.check_account_exists to anon, authenticated;
+
+-- 11. Sync phone to auth.users so Phone and Providers 'Email, Phone' display in Supabase Auth
+create or replace function public.sync_user_phone(p_phone text)
+returns boolean
+language plpgsql
+security definer set search_path = public, auth
+as $$
+declare
+  v_clean text;
+  v_formatted text;
+begin
+  v_clean := regexp_replace(p_phone, '\D', '', 'g');
+  if length(v_clean) = 10 then
+    v_formatted := '91' || v_clean;
+  elsif length(v_clean) > 10 then
+    v_formatted := v_clean;
+  else
+    return false;
+  end if;
+
+  if auth.uid() is not null then
+    update auth.users
+    set phone = v_formatted,
+        phone_confirmed_at = coalesce(phone_confirmed_at, now())
+    where id = auth.uid();
+    return true;
+  end if;
+  return false;
+end;
+$$;
+
+grant execute on function public.sync_user_phone to anon, authenticated;
+
+-- One-time query to backfill phone numbers for existing users who currently show '-' in Phone:
+-- (Can be run in Supabase SQL Editor)
+update auth.users
+set phone = case 
+      when length(regexp_replace(raw_user_meta_data->>'phone', '\D', '', 'g')) = 10 
+      then '91' || regexp_replace(raw_user_meta_data->>'phone', '\D', '', 'g')
+      else regexp_replace(raw_user_meta_data->>'phone', '\D', '', 'g')
+    end,
+    phone_confirmed_at = coalesce(phone_confirmed_at, now())
+where (phone is null or phone = '') 
+  and raw_user_meta_data->>'phone' is not null
+  and length(regexp_replace(raw_user_meta_data->>'phone', '\D', '', 'g')) >= 10;
+
