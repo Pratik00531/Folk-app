@@ -12,7 +12,6 @@ export interface UserProfile {
   lead_id?: string | null;
   lead_name?: string | null;
   avatar_url?: string | null;
-  spiritual_name?: string | null;
   chanting_commitment?: number;
   college_or_profession?: string;
   created_at: string;

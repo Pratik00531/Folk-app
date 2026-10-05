@@ -11,7 +11,6 @@ export async function apiSignUp(params: {
   fullName: string;
   phone: string;
   role?: 'folk_boy' | 'folk_lead' | 'folk_guide';
-  spiritualName?: string;
   guideId?: string | null;
   guideName?: string | null;
 }) {
@@ -27,7 +26,6 @@ export async function apiSignUp(params: {
         full_name: params.fullName,
         phone: params.phone,
         role: params.role || 'folk_boy',
-        spiritual_name: params.spiritualName || null,
         guide_id: params.guideId || null,
         guide_name: params.guideName || null,
       },
@@ -42,7 +40,6 @@ export async function apiSignUp(params: {
           full_name: params.fullName,
           phone: params.phone,
           role: params.role || 'folk_boy',
-          spiritual_name: params.spiritualName || null,
           guide_id: params.guideId || null,
           guide_name: params.guideName || null,
         })
@@ -161,7 +158,6 @@ export async function apiUpdateProfile(userId: string, updates: Partial<UserProf
     .from('profiles')
     .update({
       full_name: updates.full_name,
-      spiritual_name: updates.spiritual_name,
       phone: updates.phone,
       email: updates.email,
       avatar_url: updates.avatar_url,
@@ -459,7 +455,7 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
 
         return {
           id: p.id,
-          name: p.spiritual_name ? `${p.full_name} (${p.spiritual_name})` : p.full_name,
+          name: p.full_name,
           folk_id: p.folk_id || 'FOLK-XXXX',
           role: p.role,
           avatar_url: p.avatar_url || '/assets/images/Chanting.png',

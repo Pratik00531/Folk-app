@@ -30,7 +30,6 @@ export default function SignupView() {
 
   // Form State
   const [fullName, setFullName] = useState('');
-  const [spiritualName, setSpiritualName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
@@ -278,7 +277,7 @@ export default function SignupView() {
             {/* 1. Full Name */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#59534E] ml-1">
-                Full Legal Name
+                Your Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
@@ -288,7 +287,7 @@ export default function SignupView() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Pratik Sharma"
+                  placeholder="e.g. Pratik"
                   required
                   className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white focus:border-[#E07A2B] focus:ring-2 focus:ring-[#E07A2B]/15 text-sm text-[#1B1917] placeholder:text-[#A89E95] outline-none shadow-xs"
                 />

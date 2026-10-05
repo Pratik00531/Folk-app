@@ -180,7 +180,7 @@ export default function GuideDashboardView() {
               FOLK Guide Dashboard
             </span>
             <h1 className="text-base font-extrabold text-[#1B1917] leading-tight">
-              {currentUser.spiritual_name || currentUser.full_name || 'FOLK Guide'}
+              {currentUser.full_name || 'FOLK Guide'}
             </h1>
           </div>
         </div>

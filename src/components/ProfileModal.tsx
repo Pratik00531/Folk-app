@@ -38,7 +38,6 @@ export default function ProfileModal() {
   } = useApp();
 
   const [fullName, setFullName] = useState(currentUser.full_name || '');
-  const [spiritualName, setSpiritualName] = useState(currentUser.spiritual_name || '');
   const [phone, setPhone] = useState(currentUser.phone || '');
   const [email, setEmail] = useState(currentUser.email || '');
   const [chantingCommitment, setChantingCommitment] = useState(currentUser.chanting_commitment || 16);
@@ -55,7 +54,6 @@ export default function ProfileModal() {
   useEffect(() => {
     if (isProfileModalOpen) {
       setFullName(currentUser.full_name || '');
-      setSpiritualName(currentUser.spiritual_name || '');
       setPhone(currentUser.phone || '');
       setEmail(currentUser.email || '');
       setChantingCommitment(currentUser.chanting_commitment || 16);
@@ -156,7 +154,6 @@ export default function ProfileModal() {
 
     updateUserProfile({
       full_name: fullName.trim() || currentUser.full_name,
-      spiritual_name: spiritualName.trim() || null,
       phone: phone.trim(),
       email: email.trim(),
       chanting_commitment: Number(chantingCommitment) || 16,
@@ -259,12 +256,6 @@ export default function ProfileModal() {
                 </span>
               </div>
 
-              {spiritualName && (
-                <div className="text-[11px] font-semibold text-[#E07A2B]">
-                  Spiritual: {spiritualName}
-                </div>
-              )}
-
               <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[#786E65]">
                 <span className="font-mono font-semibold bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                   {currentUser.folk_id}
@@ -330,10 +321,10 @@ export default function ProfileModal() {
               Personal Information
             </h3>
 
-            {/* Full Name */}
+            {/* Name */}
             <div>
               <label className="text-[11px] font-bold text-[#2C2825] block mb-1">
-                Full Legal Name <span className="text-red-500">*</span>
+                Your Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input
@@ -342,22 +333,6 @@ export default function ProfileModal() {
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Radheshyam Patel"
                   required
-                  className="w-full h-10 px-3 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-[#1B1917] focus:border-[#E07A2B] outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Spiritual Name */}
-            <div>
-              <label className="text-[11px] font-bold text-[#2C2825] block mb-1">
-                Spiritual Name / Devotional Aspirant Name
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={spiritualName}
-                  onChange={(e) => setSpiritualName(e.target.value)}
-                  placeholder="e.g. Radheshyam Dasa (Optional)"
                   className="w-full h-10 px-3 rounded-xl bg-white border border-stone-200 text-xs font-semibold text-[#1B1917] focus:border-[#E07A2B] outline-none"
                 />
               </div>
