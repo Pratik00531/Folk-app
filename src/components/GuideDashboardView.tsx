@@ -69,7 +69,6 @@ export default function GuideDashboardView() {
     currentUser,
     guideDevotees,
     setSelectedDevoteeForDetail,
-    switchRole,
     sendRemindersToPending,
     approvalRequests,
     approveSadhanaRequest,
@@ -252,18 +251,14 @@ export default function GuideDashboardView() {
         </button>
       </div>
 
-      {/* Date & Mode Switcher */}
+      {/* Active Devotees Count */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-xs font-bold text-[#786E65]">
+        <span className="text-xs font-bold text-[#786E65] dark:text-stone-400">
           Monitoring: {guideDevotees.length} {guideDevotees.length === 1 ? 'Folk Boy / Lead' : 'Folk Boys & Leads'}
         </span>
-        <button
-          type="button"
-          onClick={() => switchRole('folk_boy')}
-          className="text-[11px] font-semibold text-[#8C460D] hover:underline cursor-pointer"
-        >
-          Switch to Folk Boy View →
-        </button>
+        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+          Live Temple Roster
+        </span>
       </div>
 
       {guideActiveTab === 'roster' ? (
