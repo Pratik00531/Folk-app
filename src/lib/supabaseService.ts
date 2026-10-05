@@ -77,7 +77,20 @@ export async function apiSignIn(identifier: string, password: string) {
   // 2. User entered a mobile number (e.g. 10 digits)
   const cleanPhone = clean.replace(/\D/g, '');
 
-  // A. Check if this phone has a registered real email in profiles via RPC
+  // A. Check local device cache for phone -> email mapping
+  if (typeof window !== 'undefined') {
+    try {
+      const cached =
+        localStorage.getItem(`folk_phone_map_${cleanPhone}`) ||
+        localStorage.getItem(`folk_phone_map_${cleanPhone.slice(-10)}`);
+      if (cached && cached.includes('@')) {
+        let res = await supabase.auth.signInWithPassword({ email: cached.toLowerCase(), password });
+        if (!res.error) return res;
+      }
+    } catch {}
+  }
+
+  // B. Check if this phone has a registered real email in profiles via RPC
   try {
     const { data: realEmail } = await supabase.rpc('resolve_login_email', { p_phone: cleanPhone });
     if (realEmail && typeof realEmail === 'string' && realEmail.includes('@')) {

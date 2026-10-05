@@ -138,6 +138,13 @@ export default function SignupView() {
       }
 
       // User created and signed in
+      if (typeof window !== 'undefined') {
+        const cleanPhone = phone.trim().replace(/\D/g, '');
+        localStorage.setItem(`folk_phone_map_${cleanPhone}`, userEmail);
+        localStorage.setItem(`folk_phone_map_${cleanPhone.slice(-10)}`, userEmail);
+        localStorage.setItem('folk_last_login_identifier', userEmail);
+      }
+
       setScreen('home');
     }
   };

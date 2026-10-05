@@ -302,6 +302,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           created_at: profile.created_at,
           updated_at: profile.updated_at,
         });
+
+        if (profile.phone && profile.email && typeof window !== 'undefined') {
+          const clean = profile.phone.replace(/\D/g, '');
+          localStorage.setItem(`folk_phone_map_${clean}`, profile.email);
+          localStorage.setItem(`folk_phone_map_${clean.slice(-10)}`, profile.email);
+        }
       }
 
       // Fetch user's sadhana records
