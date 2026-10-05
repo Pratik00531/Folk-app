@@ -153,7 +153,7 @@ export async function apiGetProfile(userId: string) {
     .single();
 
   if (data) {
-    // If guide_id is set or guide_name is missing/null, attempt to resolve the guide's real name
+    // If guide_id is set or guide_name is missing/null, attempt to resolve the guide's real name from profiles
     if (data.guide_id && !data.guide_name) {
       try {
         const { data: guideProfile } = await supabase
@@ -163,16 +163,6 @@ export async function apiGetProfile(userId: string) {
           .single();
         if (guideProfile?.full_name) {
           data.guide_name = guideProfile.full_name;
-        }
-      } catch {}
-    }
-    // If guide_name is still null for a devotee, resolve from registered guides list
-    if (!data.guide_name && data.role !== 'folk_guide') {
-      try {
-        const { data: guides } = await apiGetRegisteredGuides();
-        if (guides && guides.length > 0) {
-          data.guide_name = guides[0].name;
-          data.guide_id = guides[0].id;
         }
       } catch {}
     }
@@ -566,12 +556,6 @@ export async function apiGetRegisteredGuides(): Promise<{
 }> {
   // 1. Gather any known/cached registered guides
   let list: { id: string; name: string }[] = [];
-
-  // Seed known registered temple guide
-  const defaultGuides = [
-    { id: 'a953235f-5d8f-414d-a57f-4a3d2108fa0d', name: 'Amogh' },
-  ];
-  list.push(...defaultGuides);
 
   if (typeof window !== 'undefined') {
     try {

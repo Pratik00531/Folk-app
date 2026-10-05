@@ -49,7 +49,7 @@ export default function ProfileModal() {
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
   const [registeredGuides, setRegisteredGuides] = useState<{ id: string; name: string }[]>([]);
-  const [selectedGuideName, setSelectedGuideName] = useState(currentUser.guide_name || 'Amogh');
+  const [selectedGuideName, setSelectedGuideName] = useState(currentUser.guide_name || '');
   const [selectedGuideId, setSelectedGuideId] = useState<string | null>(currentUser.guide_id || null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +63,7 @@ export default function ProfileModal() {
       setEmail(currentUser.email || '');
       setChantingCommitment(currentUser.chanting_commitment || 16);
       setProfession(currentUser.college_or_profession || 'Engineering Student / Tech Professional');
-      setSelectedGuideName(currentUser.guide_name || 'Amogh');
+      setSelectedGuideName(currentUser.guide_name || '');
       setSelectedGuideId(currentUser.guide_id || null);
       setPhoneError('');
       setSaveSuccess(false);
@@ -75,13 +75,12 @@ export default function ProfileModal() {
           .then(({ data }) => {
             if (data && data.length > 0) {
               setRegisteredGuides(data);
-              if (!currentUser.guide_name) {
-                setSelectedGuideName(data[0].name);
-                setSelectedGuideId(data[0].id);
-              } else {
+              if (currentUser.guide_name) {
                 const match = data.find((g) => g.name.toLowerCase() === currentUser.guide_name?.toLowerCase());
                 if (match) setSelectedGuideId(match.id);
               }
+            } else {
+              setRegisteredGuides([]);
             }
           })
           .catch(() => {});
@@ -461,11 +460,17 @@ export default function ProfileModal() {
             ) : (
               <div>
                 <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 flex items-center justify-between mb-1">
-                  <span>Assigned FOLK Guide <span className="text-red-500">*</span></span>
-                  <span className="text-[10px] font-bold text-[#216E39] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Active Guide
-                  </span>
+                  <span>Assigned FOLK Guide</span>
+                  {selectedGuideName ? (
+                    <span className="text-[10px] font-bold text-[#216E39] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Active Guide
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full border border-stone-200 dark:border-stone-700">
+                      Not Assigned
+                    </span>
+                  )}
                 </label>
                 <div className="relative">
                   <select
@@ -474,24 +479,29 @@ export default function ProfileModal() {
                       const name = e.target.value;
                       setSelectedGuideName(name);
                       const match = registeredGuides.find((g) => g.name === name);
-                      if (match) setSelectedGuideId(match.id);
+                      setSelectedGuideId(match ? match.id : null);
                     }}
                     className="w-full h-10 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-bold text-[#1B1917] dark:text-stone-100 focus:border-[#E07A2B] outline-none cursor-pointer"
                   >
-                    {registeredGuides.length > 0 ? (
-                      registeredGuides.map((g) => (
-                        <option key={g.id} value={g.name}>
-                          {g.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="Amogh">Amogh</option>
-                    )}
+                    <option value="">
+                      {registeredGuides.length > 0 ? '-- Select Your Registered FOLK Guide --' : 'No Guides Registered Yet'}
+                    </option>
+                    {registeredGuides.map((g) => (
+                      <option key={g.id} value={g.name}>
+                        {g.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
-                <span className="text-[10px] text-[#786E65] dark:text-stone-400 block mt-1">
-                  Assigned Temple Guide: <strong className="text-[#E07A2B] font-bold">{selectedGuideName || 'Amogh'}</strong> will monitor your daily Sādhana reports.
-                </span>
+                {selectedGuideName ? (
+                  <span className="text-[10px] text-[#786E65] dark:text-stone-400 block mt-1">
+                    Assigned Temple Guide: <strong className="text-[#E07A2B] font-bold">{selectedGuideName}</strong> will monitor your daily Sādhana reports.
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 block mt-1">
+                    Select your registered temple guide to link your Sādhana reporting.
+                  </span>
+                )}
               </div>
             )}
 
