@@ -23,6 +23,7 @@ import {
   Camera,
 } from 'lucide-react';
 import { CURRENT_APP_VERSION, checkForAppUpdates } from '@/lib/appVersionService';
+import { apiGetRegisteredGuides } from '@/lib/supabaseService';
 
 export default function ProfileModal() {
   const {
@@ -47,6 +48,10 @@ export default function ProfileModal() {
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
+  const [registeredGuides, setRegisteredGuides] = useState<{ id: string; name: string }[]>([]);
+  const [selectedGuideName, setSelectedGuideName] = useState(currentUser.guide_name || 'Amogh');
+  const [selectedGuideId, setSelectedGuideId] = useState<string | null>(currentUser.guide_id || null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
@@ -58,10 +63,29 @@ export default function ProfileModal() {
       setEmail(currentUser.email || '');
       setChantingCommitment(currentUser.chanting_commitment || 16);
       setProfession(currentUser.college_or_profession || 'Engineering Student / Tech Professional');
+      setSelectedGuideName(currentUser.guide_name || 'Amogh');
+      setSelectedGuideId(currentUser.guide_id || null);
       setPhoneError('');
       setSaveSuccess(false);
       setUpdateStatus(null);
       setAvatarPreview(currentUser.avatar_url || null);
+
+      if (typeof apiGetRegisteredGuides === 'function') {
+        apiGetRegisteredGuides()
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              setRegisteredGuides(data);
+              if (!currentUser.guide_name) {
+                setSelectedGuideName(data[0].name);
+                setSelectedGuideId(data[0].id);
+              } else {
+                const match = data.find((g) => g.name.toLowerCase() === currentUser.guide_name?.toLowerCase());
+                if (match) setSelectedGuideId(match.id);
+              }
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [isProfileModalOpen, currentUser]);
 
@@ -158,6 +182,8 @@ export default function ProfileModal() {
       email: email.trim(),
       chanting_commitment: Number(chantingCommitment) || 16,
       college_or_profession: profession.trim(),
+      guide_name: selectedGuideName,
+      guide_id: selectedGuideId,
     });
 
     setSaveSuccess(true);
@@ -419,18 +445,55 @@ export default function ProfileModal() {
               </select>
             </div>
 
-            {/* Assigned Guide Information */}
-            <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/60 dark:border-stone-700 text-[11px] flex items-center justify-between">
-              <div>
-                <span className="text-[#786E65] dark:text-stone-400 block">Assigned FOLK Guide:</span>
-                <span className="font-extrabold text-[#1B1917] dark:text-stone-100">
-                  {currentUser.guide_name || 'Assigned Temple Guide'}
+            {/* Assigned Guide Information & Selection */}
+            {currentUser.role === 'folk_guide' ? (
+              <div className="p-3 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 text-[11px] flex items-center justify-between">
+                <div>
+                  <span className="text-[#8C460D] dark:text-amber-400 font-bold block">Account Authority:</span>
+                  <span className="font-extrabold text-[#1B1917] dark:text-stone-100 text-xs">
+                    Authorized FOLK Guide Counselor
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-700/60">
+                  Temple Guide
                 </span>
               </div>
-              <span className="text-[10px] font-bold text-[#216E39] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
-                Active Guide
-              </span>
-            </div>
+            ) : (
+              <div>
+                <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 flex items-center justify-between mb-1">
+                  <span>Assigned FOLK Guide <span className="text-red-500">*</span></span>
+                  <span className="text-[10px] font-bold text-[#216E39] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Active Guide
+                  </span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedGuideName}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      setSelectedGuideName(name);
+                      const match = registeredGuides.find((g) => g.name === name);
+                      if (match) setSelectedGuideId(match.id);
+                    }}
+                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-bold text-[#1B1917] dark:text-stone-100 focus:border-[#E07A2B] outline-none cursor-pointer"
+                  >
+                    {registeredGuides.length > 0 ? (
+                      registeredGuides.map((g) => (
+                        <option key={g.id} value={g.name}>
+                          {g.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="Amogh">Amogh</option>
+                    )}
+                  </select>
+                </div>
+                <span className="text-[10px] text-[#786E65] dark:text-stone-400 block mt-1">
+                  Assigned Temple Guide: <strong className="text-[#E07A2B] font-bold">{selectedGuideName || 'Amogh'}</strong> will monitor your daily Sādhana reports.
+                </span>
+              </div>
+            )}
 
             {/* App Version & In-App Auto Update Checker */}
             <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/5 border border-amber-200/60 dark:border-stone-700 text-[11px] flex items-center justify-between">

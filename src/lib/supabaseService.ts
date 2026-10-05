@@ -152,28 +152,75 @@ export async function apiGetProfile(userId: string) {
     .eq('id', userId)
     .single();
 
+  if (data) {
+    // If guide_id is set or guide_name is missing/null, attempt to resolve the guide's real name
+    if (data.guide_id && !data.guide_name) {
+      try {
+        const { data: guideProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', data.guide_id)
+          .single();
+        if (guideProfile?.full_name) {
+          data.guide_name = guideProfile.full_name;
+        }
+      } catch {}
+    }
+    // If guide_name is still null for a devotee, resolve from registered guides list
+    if (!data.guide_name && data.role !== 'folk_guide') {
+      try {
+        const { data: guides } = await apiGetRegisteredGuides();
+        if (guides && guides.length > 0) {
+          data.guide_name = guides[0].name;
+          data.guide_id = guides[0].id;
+        }
+      } catch {}
+    }
+  }
+
   return { data, error };
 }
 
 export async function apiUpdateProfile(userId: string, updates: Partial<UserProfile>) {
   if (!isSupabaseConfigured) return { data: null, error: null };
 
-  const { data, error } = await supabase
+  const payload: any = {
+    full_name: updates.full_name,
+    phone: updates.phone,
+    email: updates.email,
+    avatar_url: updates.avatar_url,
+    chanting_commitment: updates.chanting_commitment,
+    college_or_profession: updates.college_or_profession,
+    updated_at: new Date().toISOString(),
+  };
+
+  if ((updates as any).guide_id) {
+    payload.guide_id = (updates as any).guide_id;
+  }
+  if (updates.guide_name) {
+    payload.guide_name = updates.guide_name;
+  }
+
+  try {
+    const res = await supabase
+      .from('profiles')
+      .update(payload)
+      .eq('id', userId)
+      .select()
+      .single();
+    if (!res.error) return res;
+  } catch {}
+
+  // Fallback in case guide_name column was not added to profiles schema
+  delete payload.guide_name;
+  const resFallback = await supabase
     .from('profiles')
-    .update({
-      full_name: updates.full_name,
-      phone: updates.phone,
-      email: updates.email,
-      avatar_url: updates.avatar_url,
-      chanting_commitment: updates.chanting_commitment,
-      college_or_profession: updates.college_or_profession,
-      updated_at: new Date().toISOString(),
-    })
+    .update(payload)
     .eq('id', userId)
     .select()
     .single();
 
-  return { data, error };
+  return resFallback;
 }
 
 // ==============================================================================
