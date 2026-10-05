@@ -14,11 +14,19 @@ import {
   UserCheck,
   UserMinus,
   Sparkles,
+  KeyRound,
+  Lock,
 } from 'lucide-react';
+import { apiGuideResetDevoteePassword } from '@/lib/supabaseService';
 
 export default function GuideMemberDetailModal() {
   const { selectedDevoteeForDetail, setSelectedDevoteeForDetail, toggleLeadRole } = useApp();
   const [reminderSent, setReminderSent] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [newTempPassword, setNewTempPassword] = useState('HareKrishna@108');
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   if (!selectedDevoteeForDetail) return null;
 
@@ -217,6 +225,66 @@ export default function GuideMemberDetailModal() {
                 </>
               )}
             </button>
+
+            {/* Reset Devotee Password (For Guide Admin) */}
+            <button
+              onClick={() => {
+                setShowResetPassword(!showResetPassword);
+                setResetSuccess(null);
+                setResetError(null);
+              }}
+              className="w-full h-11 rounded-2xl bg-white/90 hover:bg-white border border-stone-200/80 text-xs font-bold text-[#1B1917] flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-all"
+            >
+              <KeyRound className="w-4 h-4 text-[#E07A2B]" />
+              <span>{showResetPassword ? 'Hide Password Reset' : 'Reset Devotee Password'}</span>
+            </button>
+
+            {showResetPassword && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 space-y-2.5 animate-in fade-in duration-150">
+                <div className="text-[11px] font-bold text-[#8C460D] flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#E07A2B]" />
+                  <span>Set New Password for {devotee.name}</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={newTempPassword}
+                    onChange={(e) => setNewTempPassword(e.target.value)}
+                    placeholder="Enter new temporary password"
+                    className="w-full h-10 px-3 rounded-xl bg-white border border-amber-200 text-xs font-mono font-bold text-[#1B1917] outline-none"
+                  />
+                </div>
+                {resetSuccess && (
+                  <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 p-2 rounded-xl border border-emerald-200">
+                    {resetSuccess}
+                  </div>
+                )}
+                {resetError && (
+                  <div className="text-[11px] font-bold text-red-700 bg-red-50 p-2 rounded-xl border border-red-200">
+                    {resetError}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  disabled={resetting || newTempPassword.length < 6}
+                  onClick={async () => {
+                    setResetting(true);
+                    setResetError(null);
+                    setResetSuccess(null);
+                    const { error } = await apiGuideResetDevoteePassword(devotee.id, newTempPassword);
+                    setResetting(false);
+                    if (error) {
+                      setResetError((error as any)?.message || 'Could not reset password. Ensure the stored procedure is deployed.');
+                    } else {
+                      setResetSuccess(`Password reset to "${newTempPassword}". Please inform ${devotee.name}.`);
+                    }
+                  }}
+                  className="w-full h-9 rounded-xl bg-[#1B1917] text-white text-xs font-bold flex items-center justify-center cursor-pointer active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {resetting ? 'Saving...' : 'Confirm Password Reset'}
+                </button>
+              </div>
+            )}
 
             {/* Send Personalized Reminder */}
             <button

@@ -14,6 +14,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { apiGetRegisteredGuides } from '@/lib/supabaseService';
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 
 export default function LoginView() {
   const { setScreen, switchRole, signIn, isLiveBackend } = useApp();
@@ -24,6 +25,7 @@ export default function LoginView() {
   const [errors, setErrors] = useState<{ phone?: string; password?: string; guidePasscode?: string }>({});
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
 
   // Active guides from Supabase
   const [activeGuides, setActiveGuides] = useState<{ id: string; name: string }[]>([]);
@@ -279,7 +281,13 @@ export default function LoginView() {
         <div className="space-y-1.5">
           <div className="flex items-center justify-between ml-1">
             <label className="text-xs font-bold text-[#59534E]">Password</label>
-            <span className="text-[10px] text-[#8E867F]">At least 6 characters</span>
+            <button
+              type="button"
+              onClick={() => setIsForgotPasswordOpen(true)}
+              className="text-[11px] font-bold text-[#C86315] hover:text-[#9C4507] hover:underline cursor-pointer"
+            >
+              Forgot Password?
+            </button>
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
@@ -381,6 +389,17 @@ export default function LoginView() {
           </button>
         </p>
       </div>
+
+      {/* Forgot Password Recovery Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordOpen}
+        onClose={() => setIsForgotPasswordOpen(false)}
+        onSuccess={(ident) => {
+          setIsForgotPasswordOpen(false);
+          setPhone(ident);
+        }}
+        initialIdentifier={phone}
+      />
     </div>
   );
 }

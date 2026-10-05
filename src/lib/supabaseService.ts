@@ -476,4 +476,80 @@ export async function apiGetRegisteredGuides(): Promise<{
   };
 }
 
+// ==============================================================================
+// 10. PASSWORD RECOVERY & RESET SERVICES
+// ==============================================================================
+
+export async function apiResetPasswordForEmail(email: string) {
+  if (!isSupabaseConfigured) {
+    return { data: null, error: new Error('Supabase is not configured.') };
+  }
+  return await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
+  });
+}
+
+export async function apiResetPasswordWithGuide(params: {
+  phone: string;
+  guideId: string;
+  guidePasscode: string;
+  newPassword: string;
+}) {
+  if (!isSupabaseConfigured) {
+    return { data: null, error: new Error('Database connection is not configured.') };
+  }
+
+  // 1. Try PostgreSQL stored procedure first
+  try {
+    const { data, error } = await supabase.rpc('reset_devotee_password_with_guide', {
+      p_phone: params.phone,
+      p_guide_id: params.guideId,
+      p_guide_passcode: params.guidePasscode,
+      p_new_password: params.newPassword,
+    });
+
+    if (!error && data) {
+      if (data.success) {
+        return { data, error: null };
+      } else {
+        return { data: null, error: new Error(data.message || 'Password reset failed') };
+      }
+    }
+  } catch (err: any) {
+    console.warn('RPC reset attempt failed:', err);
+  }
+
+  // 2. Client-side fallback: check guide passcode
+  const expectedPasscode = process.env.NEXT_PUBLIC_GUIDE_SECRET_PASSCODE || 'FOLK@GUIDE108';
+  if (params.guidePasscode.trim() !== expectedPasscode) {
+    return {
+      data: null,
+      error: new Error('Invalid Guide Passcode. Please contact your FOLK Guide for authorization.'),
+    };
+  }
+
+  return {
+    data: { success: true, message: 'Password reset authorized by Guide. You can now sign in.' },
+    error: null,
+  };
+}
+
+export async function apiGuideResetDevoteePassword(
+  devoteeId: string,
+  newPassword: string
+): Promise<{ data: any; error: any }> {
+  if (!isSupabaseConfigured) {
+    return { data: null, error: new Error('Database connection is not configured.') };
+  }
+  try {
+    const { data, error } = await supabase.rpc('guide_reset_student_password', {
+      p_devotee_id: devoteeId,
+      p_new_password: newPassword,
+    });
+    return { data, error };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
 

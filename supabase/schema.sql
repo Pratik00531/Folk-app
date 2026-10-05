@@ -3,8 +3,9 @@
 -- Production-quality schema with Row Level Security (RLS), Triggers & Versioned Rules
 -- ==============================================================================
 
--- Enable UUID extension
+-- Enable UUID & pgcrypto extensions
 create extension if not exists "uuid-ossp";
+create extension if not exists "pgcrypto";
 
 -- 1. ROLES ENUM
 create type user_role as enum ('folk_boy', 'folk_lead', 'folk_guide');
@@ -412,3 +413,74 @@ values (
   '{"3": 10, "7": 25, "14": 50, "30": 100, "60": 200, "90": 350}'::jsonb,
   true
 ) on conflict do nothing;
+
+-- 10. PASSWORD RESET FUNCTIONS (Devotee Self-Service & Guide Admin)
+create or replace function public.reset_devotee_password_with_guide(
+  p_phone text,
+  p_guide_id uuid,
+  p_guide_passcode text,
+  p_new_password text
+)
+returns jsonb
+language plpgsql
+security definer set search_path = public, auth, extensions
+as $$
+declare
+  v_user_id uuid;
+  v_expected_passcode text := 'FOLK@GUIDE108';
+  v_clean_phone text;
+begin
+  if p_guide_passcode <> v_expected_passcode then
+    return jsonb_build_object('success', false, 'message', 'Invalid Guide Passcode. Please contact your FOLK Guide for authorization.');
+  end if;
+
+  v_clean_phone := regexp_replace(p_phone, '\D', '', 'g');
+
+  select id into v_user_id
+  from public.profiles
+  where (
+    phone = p_phone 
+    or phone = v_clean_phone 
+    or email = p_phone 
+    or email = (v_clean_phone || '@folk.org')
+  )
+  limit 1;
+
+  if v_user_id is null then
+    return jsonb_build_object('success', false, 'message', 'No registered devotee found with this mobile number or email.');
+  end if;
+
+  update auth.users
+  set encrypted_password = crypt(p_new_password, gen_salt('bf')),
+      updated_at = now()
+  where id = v_user_id;
+
+  return jsonb_build_object('success', true, 'message', 'Password updated successfully! You can now log in.');
+end;
+$$;
+
+grant execute on function public.reset_devotee_password_with_guide to anon, authenticated;
+
+create or replace function public.guide_reset_student_password(
+  p_devotee_id uuid,
+  p_new_password text
+)
+returns jsonb
+language plpgsql
+security definer set search_path = public, auth, extensions
+as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and role = 'folk_guide') then
+    return jsonb_build_object('success', false, 'message', 'Only registered FOLK Guides can reset student passwords.');
+  end if;
+
+  update auth.users
+  set encrypted_password = crypt(p_new_password, gen_salt('bf')),
+      updated_at = now()
+  where id = p_devotee_id;
+
+  return jsonb_build_object('success', true, 'message', 'Devotee password reset successfully.');
+end;
+$$;
+
+grant execute on function public.guide_reset_student_password to authenticated;
