@@ -118,7 +118,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [currentScreen, setScreen] = useState<ScreenType>('home');
+  const [currentScreen, setScreen] = useState<ScreenType>('welcome');
   const [currentUser, setCurrentUser] = useState<UserProfile>(mockUsers.folk_boy);
   const [streak, setStreak] = useState<StreakData>(initialStreak);
   const [ccTransactions, setCcTransactions] = useState<CCTransaction[]>(initialCCTransactions);
@@ -166,6 +166,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Initial session load
     apiGetSession().then(({ data }) => {
       if (data?.session?.user) {
+        setScreen('home');
         const uid = data.session.user.id;
         apiGetProfile(uid).then(({ data: profile }) => {
           if (profile) {
