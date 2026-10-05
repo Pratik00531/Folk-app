@@ -86,22 +86,38 @@ export default function ComparisonAnalyticsView({
       reading: Boolean(latestUserRecord?.book_reading_minutes && latestUserRecord.book_reading_minutes > 0),
     },
     pillar_dots: {
-      mangala: latestUserRecord?.mangala_arati_time ? 'green' : 'red',
+      mangala: !latestUserRecord?.mangala_arati_time
+        ? 'red'
+        : latestUserRecord.mangala_arati_time <= '05:05 AM'
+        ? 'green'
+        : latestUserRecord.mangala_arati_time <= '05:15 AM'
+        ? 'light_green'
+        : 'yellow',
       japa:
-        (latestUserRecord?.japa_rounds || 0) >= 16
+        !latestUserRecord?.japa_rounds || latestUserRecord.japa_rounds <= 0
+          ? 'red'
+          : latestUserRecord.japa_rounds >= 16
           ? 'green'
-          : (latestUserRecord?.japa_rounds || 0) > 0
-          ? 'yellow'
-          : 'red',
+          : latestUserRecord.japa_rounds >= 12
+          ? 'light_green'
+          : 'yellow',
       darshan: latestUserRecord?.darshan_arati_time ? 'green' : 'grey',
-      bhagavatam: latestUserRecord?.srimad_bhagavatam_time ? 'green' : 'red',
+      bhagavatam: !latestUserRecord?.srimad_bhagavatam_time
+        ? 'red'
+        : latestUserRecord.srimad_bhagavatam_time <= '08:05 AM'
+        ? 'green'
+        : latestUserRecord.srimad_bhagavatam_time <= '08:20 AM'
+        ? 'light_green'
+        : 'yellow',
       jf: latestUserRecord?.japa_finish_slot_time ? 'green' : 'red',
       reading:
-        (latestUserRecord?.book_reading_minutes || 0) >= 20
+        !latestUserRecord?.book_reading_minutes || latestUserRecord.book_reading_minutes <= 0
+          ? 'red'
+          : latestUserRecord.book_reading_minutes >= 30
           ? 'green'
-          : (latestUserRecord?.book_reading_minutes || 0) > 0
-          ? 'yellow'
-          : 'red',
+          : latestUserRecord.book_reading_minutes >= 15
+          ? 'light_green'
+          : 'yellow',
     },
     japa_rounds: latestUserRecord?.japa_rounds || 0,
     japa_arrival: latestUserRecord?.japa_start_time || null,

@@ -94,13 +94,16 @@ export default function PointRulesManagerModal({ onClose }: { onClose: () => voi
             </p>
             <div className="flex items-center gap-3 pt-1 text-[10px] font-bold">
               <span className="flex items-center gap-1 text-[#16A34A]">
-                <span className="w-2 h-2 rounded-full bg-[#16A34A]" /> Green (Full / On time)
+                <span className="w-2 h-2 rounded-full bg-[#16A34A]" /> Green (Full Points)
               </span>
               <span className="flex items-center gap-1 text-[#65A30D]">
-                <span className="w-2 h-2 rounded-full bg-[#84CC16]" /> Light Green (Late)
+                <span className="w-2 h-2 rounded-full bg-[#84CC16]" /> Light Green (Good Points)
               </span>
               <span className="flex items-center gap-1 text-[#D97706]">
-                <span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Yellow (Last min)
+                <span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Yellow (Low Points)
+              </span>
+              <span className="flex items-center gap-1 text-red-600">
+                <span className="w-2 h-2 rounded-full bg-[#EF4444]" /> Red (0 Points)
               </span>
             </div>
           </div>

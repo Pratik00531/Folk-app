@@ -35,34 +35,42 @@ import { formatIndianDayAndMonth, getIndianTodayStr, getIndianYesterdayStr } fro
 function getDotColorClass(status: PillarDotStatus) {
   switch (status) {
     case 'green':
-      return 'bg-[#16A34A]'; // Green: Full attendance / on time
+      return 'bg-[#16A34A]'; // Green: Full points (highest)
     case 'light_green':
-      return 'bg-[#84CC16]'; // Light Green: 10-15 min late
+      return 'bg-[#84CC16]'; // Light Green: Good points
     case 'yellow':
-      return 'bg-[#F59E0B]'; // Yellow: Last minutes / partial
+      return 'bg-[#F59E0B]'; // Yellow: Low / partial points
     case 'red':
-      return 'bg-[#EF4444]'; // Red: Absent / did not attend
+      return 'bg-[#EF4444]'; // Red: 0 points
     case 'grey':
     default:
-      return 'bg-[#CBD5E1]'; // Grey: N/A (e.g. Darshan on weekdays)
+      return 'bg-[#CBD5E1] dark:bg-stone-600'; // Grey: N/A
   }
 }
 
 function getDotTooltip(status: PillarDotStatus, pillarName: string) {
   switch (status) {
     case 'green':
-      return `${pillarName}: Full / On-Time (Green)`;
+      return `${pillarName}: Full Points (Green)`;
     case 'light_green':
-      return `${pillarName}: 10-15 Min Late (Light Green)`;
+      return `${pillarName}: Good Points (Light Green)`;
     case 'yellow':
-      return `${pillarName}: Last Min / Partial (Yellow)`;
+      return `${pillarName}: Low Points (Yellow)`;
     case 'red':
-      return `${pillarName}: Did Not Attend (Red)`;
+      return `${pillarName}: 0 Points (Red)`;
     case 'grey':
     default:
       return `${pillarName}: Not Applicable (Grey)`;
   }
 }
+
+function getPointsColorClass(points: number): string {
+  if (points <= 0) return 'text-[#EF4444] dark:text-red-400'; // Red is especially for 0!
+  if (points >= 80) return 'text-[#16A34A] dark:text-emerald-400'; // More points -> Green
+  if (points >= 50) return 'text-[#65A30D] dark:text-lime-400'; // Mid-high -> Light Green
+  return 'text-[#D97706] dark:text-amber-400'; // Lesser goes to Yellow
+}
+
 
 export default function GuideDashboardView() {
   const {
@@ -598,19 +606,19 @@ export default function GuideDashboardView() {
         </div>
       )}
 
-      {/* 4-Color Dot Guide Indicator */}
-      <div className="flex items-center justify-between px-2 py-1.5 mb-2 rounded-xl bg-white/50 dark:bg-stone-800/60 border border-transparent dark:border-stone-700/50 text-[10px] text-[#786E65] dark:text-stone-400">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#16A34A]" /> Full/On-time
+      {/* Points-based Dot Guide Indicator */}
+      <div className="flex items-center justify-between px-2.5 py-1.5 mb-2 rounded-xl bg-white/50 dark:bg-stone-800/60 border border-transparent dark:border-stone-700/50 text-[10px] text-[#786E65] dark:text-stone-400">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#16A34A]" /> Full Points
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#84CC16]" /> 10-15m Late
+        <span className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#84CC16]" /> Good Points
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Last min
+        <span className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#F59E0B]" /> Low Points
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-[#EF4444]" /> Absent
+        <span className="flex items-center gap-1.5 font-bold text-red-600 dark:text-red-400">
+          <span className="w-2 h-2 rounded-full bg-[#EF4444]" /> 0 Points
         </span>
       </div>
 
@@ -741,7 +749,7 @@ export default function GuideDashboardView() {
 
                 {/* Points Badge */}
                 <div className="w-11 text-right">
-                  <span className="text-base font-black text-[#1B1917] dark:text-stone-100 leading-none block">
+                  <span className={`text-base font-black leading-none block ${getPointsColorClass(displayPoints)}`}>
                     {displayPoints}
                   </span>
                   <span className="text-[10px] text-[#786E65] dark:text-stone-400 block">

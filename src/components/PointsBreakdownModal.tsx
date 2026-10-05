@@ -47,27 +47,27 @@ export default function PointsBreakdownModal() {
             </p>
           </div>
 
-          {/* Color Legend (as specified by user) */}
-          <div className="bg-white/80 p-3.5 rounded-2xl border border-stone-200/50 space-y-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#786E65] block">
-              Attendance Color Dots
+          {/* Color Legend (Points-Based System) */}
+          <div className="bg-white/80 dark:bg-stone-800/80 p-3.5 rounded-2xl border border-stone-200/50 dark:border-stone-700/60 space-y-2">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#786E65] dark:text-stone-400 block">
+              Points & Dot Color System
             </span>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#16A34A] shrink-0" />
-                <span className="text-[#1B1917] font-semibold">Green: Full / On Time</span>
+                <span className="text-[#1B1917] dark:text-stone-100 font-semibold">Green: Full Points</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#84CC16] shrink-0" />
-                <span className="text-[#1B1917] font-semibold">Light Green: 10-15m Late</span>
+                <span className="text-[#1B1917] dark:text-stone-100 font-semibold">Light Green: Good Points</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#F59E0B] shrink-0" />
-                <span className="text-[#1B1917] font-semibold">Yellow: Last Min / Partial</span>
+                <span className="text-[#1B1917] dark:text-stone-100 font-semibold">Yellow: Low Points</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-[#EF4444] shrink-0" />
-                <span className="text-[#1B1917] font-semibold">Red: Absent / Missed</span>
+                <span className="text-[#EF4444] dark:text-red-400 font-semibold">Red: 0 Points</span>
               </div>
             </div>
           </div>

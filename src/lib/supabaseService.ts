@@ -518,12 +518,36 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
             reading: Boolean(latestRecord?.book_reading_minutes && latestRecord.book_reading_minutes > 0),
           },
           pillar_dots: {
-            mangala: latestRecord?.mangala_arati_time ? 'green' : 'red',
-            japa: (latestRecord?.japa_rounds || 0) >= 16 ? 'green' : (latestRecord?.japa_rounds || 0) > 0 ? 'yellow' : 'red',
+            mangala: !latestRecord?.mangala_arati_time
+              ? 'red'
+              : latestRecord.mangala_arati_time <= '05:05 AM'
+              ? 'green'
+              : latestRecord.mangala_arati_time <= '05:15 AM'
+              ? 'light_green'
+              : 'yellow',
+            japa: !latestRecord?.japa_rounds || latestRecord.japa_rounds <= 0
+              ? 'red'
+              : latestRecord.japa_rounds >= 16
+              ? 'green'
+              : latestRecord.japa_rounds >= 12
+              ? 'light_green'
+              : 'yellow',
             darshan: latestRecord?.darshan_arati_time ? 'green' : 'grey',
-            bhagavatam: latestRecord?.srimad_bhagavatam_time ? 'green' : 'red',
+            bhagavatam: !latestRecord?.srimad_bhagavatam_time
+              ? 'red'
+              : latestRecord.srimad_bhagavatam_time <= '08:05 AM'
+              ? 'green'
+              : latestRecord.srimad_bhagavatam_time <= '08:20 AM'
+              ? 'light_green'
+              : 'yellow',
             jf: latestRecord?.japa_finish_slot_time ? 'green' : 'red',
-            reading: (latestRecord?.book_reading_minutes || 0) >= 20 ? 'green' : (latestRecord?.book_reading_minutes || 0) > 0 ? 'yellow' : 'red',
+            reading: !latestRecord?.book_reading_minutes || latestRecord.book_reading_minutes <= 0
+              ? 'red'
+              : latestRecord.book_reading_minutes >= 30
+              ? 'green'
+              : latestRecord.book_reading_minutes >= 15
+              ? 'light_green'
+              : 'yellow',
           },
           japa_rounds: latestRecord?.japa_rounds || 0,
           japa_arrival: latestRecord?.japa_start_time || null,
