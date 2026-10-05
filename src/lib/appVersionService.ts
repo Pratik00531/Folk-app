@@ -33,10 +33,15 @@ export async function checkForAppUpdates(): Promise<{
   current: string;
 }> {
   try {
-    // Try fetching from the live API route with cache busting
-    const res = await fetch(`/api/version?t=${Date.now()}`, {
+    // Try fetching from static version.json or API route with cache busting
+    let res = await fetch(`/version.json?t=${Date.now()}`, {
       headers: { 'Cache-Control': 'no-cache' },
     });
+    if (!res.ok) {
+      res = await fetch(`/api/version?t=${Date.now()}`, {
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+    }
     if (res.ok) {
       const remoteInfo: AppVersionInfo = await res.json();
       const hasNewVersion = remoteInfo.buildNumber > CURRENT_BUILD_NUMBER;
