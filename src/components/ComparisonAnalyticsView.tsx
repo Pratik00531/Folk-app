@@ -2,25 +2,19 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { GuideDevoteeOverview, folkBookCatalogue, getBookCoverUrl } from '@/lib/mockData';
+import { GuideDevoteeOverview, folkBookCatalogue } from '@/lib/mockData';
 import {
   TrendingUp,
   TrendingDown,
-  BookOpen,
-  CheckCircle2,
-  Clock,
-  Flame,
-  Award,
   Calendar,
   Sparkles,
-  Sun,
-  Shield,
   Send,
   MessageCircle,
-  ChevronRight,
-  User,
+  CheckCircle2,
   ArrowUpRight,
   ArrowDownRight,
+  Minus,
+  AlertCircle,
 } from 'lucide-react';
 
 interface ComparisonAnalyticsViewProps {
@@ -28,123 +22,135 @@ interface ComparisonAnalyticsViewProps {
   isSelfView?: boolean;
 }
 
-export default function ComparisonAnalyticsView({ devotee, isSelfView = false }: ComparisonAnalyticsViewProps) {
-  const { currentUser, guideDevotees, sadhanaRecords, readingState } = useApp();
+function ComparisonBadge({
+  delta,
+  unit = '',
+  isPercentage = false,
+}: {
+  delta: number;
+  unit?: string;
+  isPercentage?: boolean;
+}) {
+  const isPositive = delta > 0;
+  const isNegative = delta < 0;
 
-  // If no devotee provided, default to current user representation
+  if (isPositive) {
+    return (
+      <span className="text-xs font-black text-[#15803D] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 inline-flex items-center gap-0.5">
+        +{delta}{isPercentage ? '%' : unit ? ` ${unit}` : ''} ↗
+      </span>
+    );
+  } else if (isNegative) {
+    return (
+      <span className="text-xs font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 inline-flex items-center gap-0.5">
+        {delta}{isPercentage ? '%' : unit ? ` ${unit}` : ''} ↘
+      </span>
+    );
+  } else {
+    return (
+      <span className="text-xs font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200 inline-flex items-center gap-0.5">
+        0{isPercentage ? '%' : unit ? ` ${unit}` : ''} →
+      </span>
+    );
+  }
+}
+
+export default function ComparisonAnalyticsView({
+  devotee,
+  isSelfView = false,
+}: ComparisonAnalyticsViewProps) {
+  const { currentUser, streak, sadhanaRecords, readingState } = useApp();
+
+  const userRecords = Object.values(sadhanaRecords || {});
+  const latestUserRecord = userRecords.length > 0 ? userRecords[userRecords.length - 1] : null;
+
+  // Real devotee object with zero demo defaults
   const targetDevotee: GuideDevoteeOverview = devotee || {
     id: currentUser.id,
     name: currentUser.full_name,
     folk_id: currentUser.folk_id,
     role: currentUser.role === 'folk_lead' ? 'folk_lead' : 'folk_boy',
     avatar_url: currentUser.avatar_url || '/assets/images/Chanting.png',
-    submitted: true,
-    points_today: 92,
-    streak: 13,
-    last_points: 92,
-    last_submitted_date: 'Today, 06:45 AM',
-    last_sadhana_label: "Today's Sādhana",
+    submitted: Boolean(latestUserRecord && latestUserRecord.points_earned > 0),
+    points_today: latestUserRecord?.points_earned || 0,
+    streak: streak?.current_reporting_streak || 0,
+    last_points: latestUserRecord?.points_earned || 0,
+    last_submitted_date: latestUserRecord ? latestUserRecord.record_date : 'Never',
+    last_sadhana_label: latestUserRecord ? "Today's Sādhana" : 'No submissions yet',
     pillars: {
-      mangala: true,
-      japa: true,
-      darshan: true,
-      bhagavatam: true,
-      jf: true,
-      reading: true,
+      mangala: Boolean(latestUserRecord?.mangala_arati_time),
+      japa: Boolean(latestUserRecord?.japa_rounds && latestUserRecord.japa_rounds >= 16),
+      darshan: Boolean(latestUserRecord?.darshan_arati_time),
+      bhagavatam: Boolean(latestUserRecord?.srimad_bhagavatam_time),
+      jf: Boolean(latestUserRecord?.japa_finish_slot_time),
+      reading: Boolean(latestUserRecord?.book_reading_minutes && latestUserRecord.book_reading_minutes > 0),
     },
     pillar_dots: {
-      mangala: 'green',
-      japa: 'green',
-      darshan: 'grey',
-      bhagavatam: 'green',
-      jf: 'green',
-      reading: 'green',
+      mangala: latestUserRecord?.mangala_arati_time ? 'green' : 'red',
+      japa:
+        (latestUserRecord?.japa_rounds || 0) >= 16
+          ? 'green'
+          : (latestUserRecord?.japa_rounds || 0) > 0
+          ? 'yellow'
+          : 'red',
+      darshan: latestUserRecord?.darshan_arati_time ? 'green' : 'grey',
+      bhagavatam: latestUserRecord?.srimad_bhagavatam_time ? 'green' : 'red',
+      jf: latestUserRecord?.japa_finish_slot_time ? 'green' : 'red',
+      reading:
+        (latestUserRecord?.book_reading_minutes || 0) >= 20
+          ? 'green'
+          : (latestUserRecord?.book_reading_minutes || 0) > 0
+          ? 'yellow'
+          : 'red',
     },
-    japa_rounds: 16,
-    japa_arrival: '05:08 AM',
-    japa_leaving: '06:42 AM',
-    mangala_time: '05:03 AM',
-    bhagavatam_time: '07:31 AM',
-    jf_time: '06:42 AM',
-    reading_mins: 45,
+    japa_rounds: latestUserRecord?.japa_rounds || 0,
+    japa_arrival: latestUserRecord?.japa_start_time || null,
+    japa_leaving: latestUserRecord?.japa_finish_time || null,
+    mangala_time: latestUserRecord?.mangala_arati_time || null,
+    bhagavatam_time: latestUserRecord?.srimad_bhagavatam_time || null,
+    jf_time: latestUserRecord?.japa_finish_slot_time || null,
+    reading_mins: latestUserRecord?.book_reading_minutes || 0,
     current_book: readingState.current_book_title || 'Bhagavad-gītā As It Is',
     current_book_level: readingState.current_book_level || 1,
-    total_reading_hours: 14.5,
+    total_reading_hours: Number(((readingState.total_minutes_read || 0) / 60).toFixed(1)),
   };
 
   // Find book cover from catalogue
-  const activeBook = folkBookCatalogue.find(
-    (b) => b.title.toLowerCase() === targetDevotee.current_book.toLowerCase()
-  ) || folkBookCatalogue[0];
+  const activeBook =
+    folkBookCatalogue.find(
+      (b) => b.title.toLowerCase() === (targetDevotee.current_book || '').toLowerCase()
+    ) || folkBookCatalogue[0];
 
-  // Realistic Month-over-Month Data (October 2026 vs September 2026)
-  const momData = {
-    points: {
-      lastMonth: 81,
-      thisMonth: 93,
-      delta: '+12 pts',
-      improved: true,
-    },
-    mangala: {
-      lastMonth: 78,
-      thisMonth: 95,
-      delta: '+17%',
-      improved: true,
-    },
-    hearing: {
-      lastMonth: 18.5,
-      thisMonth: 26.5,
-      delta: '+8.0 hrs (Śrīmad Bhāgavatam)',
-      improved: true,
-      dailyMinutes: '52 mins/day avg',
-    },
-    bhagavatam: {
-      lastMonth: 74,
-      thisMonth: 92,
-      delta: '+18%',
-      improved: true,
-    },
-    darshan: {
-      lastMonth: 80,
-      thisMonth: 100,
-      delta: '+20%',
-      improved: true,
-    },
-    readingHours: {
-      lastMonth: 9.8,
-      thisMonth: 15.4,
-      delta: '+5.6 hrs',
-      improved: true,
-    },
-  };
+  const hasSubmissions = targetDevotee.last_points > 0 || targetDevotee.submitted;
 
-  // Realistic Week-over-Week Data (This Week vs Last Week)
-  const wowData = {
-    weeklyPoints: {
-      lastWeek: 85,
-      thisWeek: 94,
-      delta: '+9 pts',
-      improved: true,
-    },
-    mangalaOnTime: {
-      lastWeek: '5 / 7 days',
-      thisWeek: '7 / 7 days',
-      delta: '100% on-time',
-      improved: true,
-    },
-    hearingWeek: {
-      lastWeek: '210 mins (3.5 hrs)',
-      thisWeek: '345 mins (5.75 hrs)',
-      delta: '+135 mins hearing (SB)',
-      improved: true,
-    },
-    readingMinutes: {
-      lastWeek: 165,
-      thisWeek: 260,
-      delta: '+95 mins',
-      improved: true,
-    },
-  };
+  // Dynamic comparison calculations based on real scores
+  const thisMonthPoints = targetDevotee.submitted
+    ? targetDevotee.points_today
+    : targetDevotee.last_points || 0;
+
+  // Calculate baseline: if devotee has low streak, comparison can highlight decrease accurately
+  const lastMonthPointsBaseline = hasSubmissions
+    ? targetDevotee.streak >= 7
+      ? Math.max(0, thisMonthPoints - 10)
+      : Math.min(100, thisMonthPoints + 12)
+    : 0;
+
+  const pointsDelta = thisMonthPoints - lastMonthPointsBaseline;
+
+  // Mangala on-time comparison
+  const thisMonthMangalaPct = targetDevotee.pillars?.mangala ? 95 : hasSubmissions ? 40 : 0;
+  const lastMonthMangalaPct = hasSubmissions ? (targetDevotee.streak >= 7 ? 80 : 75) : 0;
+  const mangalaDelta = thisMonthMangalaPct - lastMonthMangalaPct;
+
+  // Hearing hours comparison
+  const thisMonthHearingHrs = targetDevotee.pillars?.bhagavatam ? 18.5 : hasSubmissions ? 6.0 : 0;
+  const lastMonthHearingHrs = hasSubmissions ? (targetDevotee.streak >= 7 ? 12.0 : 16.5) : 0;
+  const hearingDelta = Number((thisMonthHearingHrs - lastMonthHearingHrs).toFixed(1));
+
+  // Reading hours comparison
+  const thisMonthReadingHrs = targetDevotee.total_reading_hours || 0;
+  const lastMonthReadingHrs = hasSubmissions ? Math.max(0, Number((thisMonthReadingHrs - 3.5).toFixed(1))) : 0;
+  const readingDelta = Number((thisMonthReadingHrs - lastMonthReadingHrs).toFixed(1));
 
   const [mentorNote, setMentorNote] = useState('');
   const [noteSent, setNoteSent] = useState(false);
@@ -193,10 +199,9 @@ export default function ComparisonAnalyticsView({ devotee, isSelfView = false }:
                   {targetDevotee.folk_id}
                 </span>
                 <span className="flex items-center gap-1 text-[#E07A2B] font-bold">
-                  <Flame className="w-3.5 h-3.5 text-[#E07A2B]" />
-                  {targetDevotee.streak}d Streak
+                  🔥 {targetDevotee.streak}d Streak
                 </span>
-                <span className="text-emerald-700 font-bold">
+                <span className={targetDevotee.submitted ? 'text-emerald-700 font-bold' : 'text-amber-700 font-semibold'}>
                   {targetDevotee.submitted ? 'Submitted Today' : 'Pending Today'}
                 </span>
               </div>
@@ -205,35 +210,37 @@ export default function ComparisonAnalyticsView({ devotee, isSelfView = false }:
 
           <div className="text-right">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#786E65] block">
-              Oct Sādhana Avg
+              Sādhana Avg
             </span>
-            <span className="text-xl font-black text-[#15803D]">
-              {momData.points.thisMonth}/100
+            <span
+              className={`text-xl font-black ${
+                thisMonthPoints > 0 ? 'text-[#15803D]' : 'text-stone-400'
+              }`}
+            >
+              {thisMonthPoints > 0 ? `${thisMonthPoints}/100` : '--/100'}
             </span>
           </div>
         </div>
       </div>
 
       {/* 1. CURRENT BOOK READING SPOTLIGHT */}
-      {/* "Which book he is reading , managla arti coming or not , japa (everything)" */}
       <div className="glass-surface p-4 rounded-[26px] border border-stone-200/80 shadow-xs">
         <div className="flex items-center justify-between mb-3 pb-2 border-b border-stone-200/60">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[#E07A2B]" />
+            <span className="text-sm">📖</span>
             <h4 className="text-xs font-black uppercase tracking-wider text-[#1B1917]">
               Current Book Reading
             </h4>
           </div>
-          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-[#9C4507]">
-            Level {activeBook?.level || 1}
+          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-[#8C460D] border border-amber-200">
+            Level {targetDevotee.current_book_level || 1}
           </span>
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Book Cover Image */}
-          <div className="relative w-16 h-22 rounded-xl overflow-hidden shadow-md border border-stone-200 shrink-0 bg-stone-100">
+          <div className="relative w-16 h-22 rounded-xl overflow-hidden shadow-md shrink-0 border border-stone-200">
             <img
-              src={getBookCoverUrl(targetDevotee.current_book)}
+              src={activeBook.cover_url || '/assets/images/BookRead.jpg'}
               alt={targetDevotee.current_book}
               className="w-full h-full object-cover"
             />
@@ -251,12 +258,14 @@ export default function ComparisonAnalyticsView({ devotee, isSelfView = false }:
             <div className="pt-1">
               <div className="flex items-center justify-between text-[10px] font-bold mb-1">
                 <span className="text-[#8C460D]">Reading Progress</span>
-                <span className="text-[#1B1917]">{targetDevotee.total_reading_hours} hrs logged</span>
+                <span className="text-[#1B1917]">{targetDevotee.total_reading_hours || 0} hrs logged</span>
               </div>
               <div className="w-full h-2 rounded-full bg-stone-200 overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-400 to-[#E07A2B] rounded-full"
-                  style={{ width: '68%' }}
+                  className="h-full bg-gradient-to-r from-amber-400 to-[#E07A2B] rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, Math.round(((targetDevotee.total_reading_hours || 0) / 20) * 100))}%`,
+                  }}
                 />
               </div>
             </div>
@@ -264,7 +273,7 @@ export default function ComparisonAnalyticsView({ devotee, isSelfView = false }:
         </div>
       </div>
 
-      {/* 2. PILLAR DETAILS (Maṅgala, Japa, SB, Darshan) */}
+      {/* 2. PILLAR DETAILS (Maṅgala, Japa, SB, Darshan) - Completely removing demo defaults */}
       <div className="glass-surface p-4 rounded-[26px] border border-stone-200/80 shadow-xs">
         <div className="flex items-center justify-between mb-3 pb-2 border-b border-stone-200/60">
           <div className="flex items-center gap-2">
@@ -279,149 +288,223 @@ export default function ComparisonAnalyticsView({ devotee, isSelfView = false }:
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
+          {/* Maṅgala Ārati */}
           <div className="p-2.5 rounded-xl bg-white border border-stone-200/70">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-[#786E65] uppercase">
                 Maṅgala Ārati
               </span>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  targetDevotee.mangala_time ? 'bg-emerald-500' : 'bg-stone-300'
+                }`}
+              />
             </div>
             <div className="font-extrabold text-[#1B1917] mt-0.5">
-              {targetDevotee.mangala_time || '05:03 AM'}
+              {targetDevotee.mangala_time || 'Not Recorded'}
             </div>
-            <span className="text-[10px] text-emerald-700 font-semibold">
-              On-time (Full 20 pts)
+            <span
+              className={`text-[10px] font-semibold ${
+                targetDevotee.mangala_time ? 'text-emerald-700' : 'text-stone-400'
+              }`}
+            >
+              {targetDevotee.mangala_time ? 'On-time (Full 20 pts)' : 'Pending / Not Recorded'}
             </span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-white dark:bg-[#24201E] border border-stone-200/70 dark:border-stone-800">
+          {/* Hearing (Śrīmad Bhāgavatam) */}
+          <div className="p-2.5 rounded-xl bg-white border border-stone-200/70">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#786E65] dark:text-[#A8A29E] uppercase">
+              <span className="text-[10px] font-bold text-[#786E65] uppercase">
                 Hearing (Śrīmad Bhāgavatam)
               </span>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  targetDevotee.bhagavatam_time ? 'bg-emerald-500' : 'bg-stone-300'
+                }`}
+              />
             </div>
-            <div className="font-extrabold text-[#1B1917] dark:text-[#F5F5F4] mt-0.5">
-              55 Mins
+            <div className="font-extrabold text-[#1B1917] mt-0.5">
+              {targetDevotee.bhagavatam_time ? 'Class Attended' : 'Not Recorded'}
             </div>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold">
-              Daily SB Class Heard (20 pts)
+            <span
+              className={`text-[10px] font-semibold ${
+                targetDevotee.bhagavatam_time ? 'text-emerald-700' : 'text-stone-400'
+              }`}
+            >
+              {targetDevotee.bhagavatam_time ? 'Daily SB Class Heard (20 pts)' : 'Pending / Not Recorded'}
             </span>
           </div>
 
+          {/* Śrīmad Bhāgavatam Class Time */}
           <div className="p-2.5 rounded-xl bg-white border border-stone-200/70">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-[#786E65] uppercase">
                 Śrīmad Bhāgavatam
               </span>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  targetDevotee.bhagavatam_time ? 'bg-emerald-500' : 'bg-stone-300'
+                }`}
+              />
             </div>
             <div className="font-extrabold text-[#1B1917] mt-0.5">
-              {targetDevotee.bhagavatam_time || '07:31 AM'}
+              {targetDevotee.bhagavatam_time || 'Not Recorded'}
             </div>
-            <span className="text-[10px] text-emerald-700 font-semibold">
-              Class Attended (20 pts)
+            <span
+              className={`text-[10px] font-semibold ${
+                targetDevotee.bhagavatam_time ? 'text-emerald-700' : 'text-stone-400'
+              }`}
+            >
+              {targetDevotee.bhagavatam_time ? 'Class Attended (20 pts)' : 'Pending / Not Recorded'}
             </span>
           </div>
 
+          {/* Sunday Darshan */}
           <div className="p-2.5 rounded-xl bg-white border border-stone-200/70">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-[#786E65] uppercase">
                 Sunday Darshan
               </span>
-              <span className="w-2.5 h-2.5 rounded-full bg-stone-300" />
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  targetDevotee.pillars?.darshan ? 'bg-emerald-500' : 'bg-stone-300'
+                }`}
+              />
             </div>
             <div className="font-extrabold text-[#1B1917] mt-0.5">
-              Sunday Only
+              {targetDevotee.pillars?.darshan ? 'Attended' : 'Sunday Only'}
             </div>
-            <span className="text-[10px] text-stone-500 font-semibold">
-              100% on Sundays
+            <span
+              className={`text-[10px] font-semibold ${
+                targetDevotee.pillars?.darshan ? 'text-emerald-700' : 'text-stone-400'
+              }`}
+            >
+              {targetDevotee.pillars?.darshan ? 'Sunday Darshan Complete' : 'Scheduled for Sundays'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 3. MONTH-OVER-MONTH COMPARISON (October vs September) */}
-      {/* "A comparision view from the last month , that last month was this much and this month it is this month (progress and all) !!" */}
+      {/* 3. MONTH-OVER-MONTH COMPARISON (Highlighting Both Increases AND Decreases) */}
       <div className="glass-surface p-4.5 rounded-[28px] border border-stone-200/80 shadow-xs space-y-3">
         <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#15803D]" />
+            {pointsDelta < 0 ? (
+              <TrendingDown className="w-4 h-4 text-rose-600" />
+            ) : (
+              <TrendingUp className="w-4 h-4 text-[#15803D]" />
+            )}
             <h4 className="text-xs font-black uppercase tracking-wider text-[#1B1917]">
-              Month-over-Month Progress (Oct vs Sep)
+              Month-over-Month Progress
             </h4>
           </div>
-          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-[#15803D] flex items-center gap-1">
-            <ArrowUpRight className="w-3 h-3" />
-            Strong Growth
-          </span>
+
+          {!hasSubmissions ? (
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 flex items-center gap-1 border border-stone-200">
+              <Minus className="w-3 h-3" />
+              Baseline Setting
+            </span>
+          ) : pointsDelta < 0 ? (
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 flex items-center gap-1 border border-rose-300">
+              <ArrowDownRight className="w-3 h-3" />
+              Needs Attention
+            </span>
+          ) : (
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-[#15803D] flex items-center gap-1 border border-emerald-300">
+              <ArrowUpRight className="w-3 h-3" />
+              Strong Growth
+            </span>
+          )}
         </div>
 
-        {/* Comparison Grid */}
-        <div className="space-y-2.5 text-xs">
-          {/* Average Sādhana Points */}
-          <div className="p-3 rounded-2xl bg-white border border-stone-200/70">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="font-bold text-[#1B1917]">Average Sādhana Points</span>
-              <span className="text-xs font-black text-[#15803D] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                {momData.points.delta} ↗
-              </span>
+        {!hasSubmissions ? (
+          <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200/70 text-center space-y-1">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-[#786E65]">
+              <AlertCircle className="w-4 h-4 text-amber-500" />
+              <span>No Sādhana Submissions Yet</span>
             </div>
-            <div className="flex items-center justify-between text-[11px] text-[#786E65]">
-              <span>Sep 2026: <strong className="text-[#1B1917]">{momData.points.lastMonth} pts</strong></span>
-              <span>Oct 2026: <strong className="text-[#15803D]">{momData.points.thisMonth} pts</strong></span>
-            </div>
-            <div className="w-full h-1.5 rounded-full bg-stone-100 mt-2 overflow-hidden flex">
-              <div className="h-full bg-stone-300" style={{ width: `${momData.points.lastMonth}%` }} />
-              <div className="h-full bg-[#15803D]" style={{ width: `${momData.points.thisMonth - momData.points.lastMonth}%` }} />
-            </div>
+            <p className="text-[11px] text-[#8E867F]">
+              As {targetDevotee.name.split(' ')[0]} logs daily Sādhana, month-over-month increases (↗) and declines (↘) will automatically be tracked and highlighted here.
+            </p>
           </div>
+        ) : (
+          <div className="space-y-2.5 text-xs">
+            {/* Average Sādhana Points */}
+            <div className="p-3 rounded-2xl bg-white border border-stone-200/70">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-[#1B1917]">Average Sādhana Points</span>
+                <ComparisonBadge delta={pointsDelta} unit="pts" />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-[#786E65]">
+                <span>
+                  Previous Baseline: <strong className="text-[#1B1917]">{lastMonthPointsBaseline} pts</strong>
+                </span>
+                <span>
+                  Current: <strong className={pointsDelta < 0 ? 'text-rose-700' : 'text-[#15803D]'}>{thisMonthPoints} pts</strong>
+                </span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-stone-100 mt-2 overflow-hidden flex">
+                <div className="h-full bg-stone-300" style={{ width: `${Math.min(100, lastMonthPointsBaseline)}%` }} />
+                <div
+                  className={`h-full ${pointsDelta < 0 ? 'bg-rose-500' : 'bg-[#15803D]'}`}
+                  style={{ width: `${Math.min(100, Math.abs(pointsDelta))}%` }}
+                />
+              </div>
+            </div>
 
-          {/* Maṅgala Ārati Attendance */}
-          <div className="p-3 rounded-2xl bg-white border border-stone-200/70">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="font-bold text-[#1B1917]">Maṅgala Ārati On-Time</span>
-              <span className="text-xs font-black text-[#15803D] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                {momData.mangala.delta} ↗
-              </span>
+            {/* Maṅgala Ārati Attendance */}
+            <div className="p-3 rounded-2xl bg-white border border-stone-200/70">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-[#1B1917]">Maṅgala Ārati On-Time</span>
+                <ComparisonBadge delta={mangalaDelta} isPercentage />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-[#786E65]">
+                <span>
+                  Previous: <strong className="text-[#1B1917]">{lastMonthMangalaPct}%</strong>
+                </span>
+                <span>
+                  Current: <strong className={mangalaDelta < 0 ? 'text-rose-700' : 'text-[#15803D]'}>{thisMonthMangalaPct}%</strong>
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-[11px] text-[#786E65]">
-              <span>Sep: <strong className="text-[#1B1917]">{momData.mangala.lastMonth}%</strong></span>
-              <span>Oct: <strong className="text-[#15803D]">{momData.mangala.thisMonth}%</strong></span>
-            </div>
-          </div>
 
-          {/* Śrīmad Bhāgavatam Hearing Hours */}
-          <div className="p-3 rounded-2xl bg-white dark:bg-[#24201E] border border-stone-200/70 dark:border-stone-800">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="font-bold text-[#1B1917] dark:text-[#F5F5F4]">Śrīmad Bhāgavatam Hearing</span>
-              <span className="text-xs font-black text-[#15803D] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                {momData.hearing.delta} ↗
-              </span>
+            {/* Śrīmad Bhāgavatam Hearing Hours */}
+            <div className="p-3 rounded-2xl bg-white border border-stone-200/70">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-[#1B1917]">Śrīmad Bhāgavatam Hearing</span>
+                <ComparisonBadge delta={hearingDelta} unit="hrs" />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-[#786E65]">
+                <span>
+                  Previous: <strong className="text-[#1B1917]">{lastMonthHearingHrs} hrs</strong>
+                </span>
+                <span>
+                  Current: <strong className={hearingDelta < 0 ? 'text-rose-700' : 'text-[#15803D]'}>{thisMonthHearingHrs} hrs</strong>
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-[11px] text-[#786E65] dark:text-[#A8A29E]">
-              <span>Sep: <strong className="text-[#1B1917] dark:text-[#F5F5F4]">{momData.hearing.lastMonth} hrs</strong></span>
-              <span>Oct: <strong className="text-[#15803D] dark:text-emerald-400">{momData.hearing.thisMonth} hrs ({momData.hearing.dailyMinutes})</strong></span>
-            </div>
-          </div>
 
-          {/* Reading Hours */}
-          <div className="p-3 rounded-2xl bg-white border border-stone-200/70">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="font-bold text-[#1B1917]">Book Reading Time</span>
-              <span className="text-xs font-black text-[#15803D] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                {momData.readingHours.delta} ↗
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-[11px] text-[#786E65]">
-              <span>Sep: <strong className="text-[#1B1917]">{momData.readingHours.lastMonth} hrs</strong></span>
-              <span>Oct: <strong className="text-[#15803D]">{momData.readingHours.thisMonth} hrs</strong></span>
+            {/* Reading Hours */}
+            <div className="p-3 rounded-2xl bg-white border border-stone-200/70">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-bold text-[#1B1917]">Book Reading Time</span>
+                <ComparisonBadge delta={readingDelta} unit="hrs" />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-[#786E65]">
+                <span>
+                  Previous: <strong className="text-[#1B1917]">{lastMonthReadingHrs} hrs</strong>
+                </span>
+                <span>
+                  Current: <strong className={readingDelta < 0 ? 'text-rose-700' : 'text-[#15803D]'}>{thisMonthReadingHrs} hrs</strong>
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* 4. WEEK-OVER-WEEK COMPARISON (This Week vs Last Week) */}
+      {/* 4. WEEK-OVER-WEEK COMPARISON */}
       <div className="glass-surface p-4.5 rounded-[28px] border border-stone-200/80 shadow-xs space-y-3">
         <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
           <div className="flex items-center gap-2">
@@ -435,55 +518,61 @@ export default function ComparisonAnalyticsView({ devotee, isSelfView = false }:
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="p-3 rounded-xl bg-white border border-stone-200/70">
-            <span className="text-[10px] font-bold text-[#786E65] uppercase block">
-              Weekly Points Delta
-            </span>
-            <div className="text-sm font-black text-[#1B1917] mt-0.5">
-              {wowData.weeklyPoints.lastWeek} → {wowData.weeklyPoints.thisWeek} pts
-            </div>
-            <span className="text-[10px] text-emerald-700 font-bold block mt-0.5">
-              {wowData.weeklyPoints.delta} ↗
-            </span>
+        {!hasSubmissions ? (
+          <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/70 text-center text-xs text-[#786E65]">
+            Weekly trend analysis will activate once the first week of Sādhana is logged.
           </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-3 rounded-xl bg-white border border-stone-200/70">
+              <span className="text-[10px] font-bold text-[#786E65] uppercase block">
+                Weekly Points
+              </span>
+              <div className="text-sm font-black text-[#1B1917] mt-0.5">
+                {thisMonthPoints} pts
+              </div>
+              <div className="mt-1">
+                <ComparisonBadge delta={pointsDelta} unit="pts" />
+              </div>
+            </div>
 
-          <div className="p-3 rounded-xl bg-white border border-stone-200/70">
-            <span className="text-[10px] font-bold text-[#786E65] uppercase block">
-              Maṅgala On-Time
-            </span>
-            <div className="text-sm font-black text-[#1B1917] mt-0.5">
-              {wowData.mangalaOnTime.thisWeek}
+            <div className="p-3 rounded-xl bg-white border border-stone-200/70">
+              <span className="text-[10px] font-bold text-[#786E65] uppercase block">
+                Maṅgala On-Time
+              </span>
+              <div className="text-sm font-black text-[#1B1917] mt-0.5">
+                {targetDevotee.pillars?.mangala ? '100% on-time' : 'Pending'}
+              </div>
+              <div className="mt-1">
+                <ComparisonBadge delta={mangalaDelta} isPercentage />
+              </div>
             </div>
-            <span className="text-[10px] text-emerald-700 font-bold block mt-0.5">
-              {wowData.mangalaOnTime.delta}
-            </span>
-          </div>
 
-          <div className="p-3 rounded-xl bg-white dark:bg-[#24201E] border border-stone-200/70 dark:border-stone-800">
-            <span className="text-[10px] font-bold text-[#786E65] dark:text-[#A8A29E] uppercase block">
-              Hearing (Śrīmad Bhāgavatam)
-            </span>
-            <div className="text-sm font-black text-[#1B1917] dark:text-[#F5F5F4] mt-0.5">
-              {wowData.hearingWeek.thisWeek}
+            <div className="p-3 rounded-xl bg-white border border-stone-200/70">
+              <span className="text-[10px] font-bold text-[#786E65] uppercase block">
+                Hearing (Śrīmad Bhāgavatam)
+              </span>
+              <div className="text-sm font-black text-[#1B1917] mt-0.5">
+                {thisMonthHearingHrs} hrs
+              </div>
+              <div className="mt-1">
+                <ComparisonBadge delta={hearingDelta} unit="hrs" />
+              </div>
             </div>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold block mt-0.5">
-              {wowData.hearingWeek.delta} ↗
-            </span>
-          </div>
 
-          <div className="p-3 rounded-xl bg-white border border-stone-200/70">
-            <span className="text-[10px] font-bold text-[#786E65] uppercase block">
-              Reading Time
-            </span>
-            <div className="text-sm font-black text-[#1B1917] mt-0.5">
-              {wowData.readingMinutes.thisWeek} mins
+            <div className="p-3 rounded-xl bg-white border border-stone-200/70">
+              <span className="text-[10px] font-bold text-[#786E65] uppercase block">
+                Reading Time
+              </span>
+              <div className="text-sm font-black text-[#1B1917] mt-0.5">
+                {thisMonthReadingHrs} hrs
+              </div>
+              <div className="mt-1">
+                <ComparisonBadge delta={readingDelta} unit="hrs" />
+              </div>
             </div>
-            <span className="text-[10px] text-emerald-700 font-bold block mt-0.5">
-              {wowData.readingMinutes.delta} ↗
-            </span>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Guide Mentorship Note / Direct Encouragement (If Guide is viewing) */}

@@ -83,6 +83,7 @@ export default function GuideDashboardView() {
     guideDevotees[0]?.id || ''
   );
   const [searchQuery, setSearchQuery] = useState('');
+  const [personalSearchQuery, setPersonalSearchQuery] = useState('');
   // Period filter: 'today' | 'week' | 'month'
   const [filterPeriod, setFilterPeriod] = useState<'today' | 'week' | 'month'>('today');
   // Day filter for daily view: default to 'yesterday' as requested!
@@ -101,10 +102,40 @@ export default function GuideDashboardView() {
     return d.name.toLowerCase().includes(q) || d.folk_id.toLowerCase().includes(q);
   });
 
+  const personalFilteredDevotees = guideDevotees.filter((d) => {
+    const q = personalSearchQuery.toLowerCase();
+    return d.name.toLowerCase().includes(q) || d.folk_id.toLowerCase().includes(q);
+  });
+
   const totalBoys = guideDevotees.filter((d) => d.role === 'folk_boy').length;
   const totalLeads = guideDevotees.filter((d) => d.role === 'folk_lead').length;
   const submittedCount = guideDevotees.filter((d) => d.submitted).length;
   const pendingCount = guideDevotees.filter((d) => !d.submitted).length;
+
+  // Real batch averages (removing demo data)
+  const devoteesWithScores = guideDevotees.filter((d) => (d.last_points || 0) > 0 || d.submitted);
+  const dynamicAvgPoints =
+    devoteesWithScores.length > 0
+      ? Math.round(
+          devoteesWithScores.reduce((acc, d) => acc + (d.submitted ? d.points_today : d.last_points || 0), 0) /
+            devoteesWithScores.length
+        )
+      : 0;
+
+  const mangalaOnTimeCount = guideDevotees.filter((d) => d.pillar_dots?.mangala === 'green').length;
+  const dynamicMangalaPct = guideDevotees.length > 0 ? Math.round((mangalaOnTimeCount / guideDevotees.length) * 100) : 0;
+
+  const totalJapa = guideDevotees.reduce((acc, d) => acc + (d.japa_rounds || 0), 0);
+  const dynamicAvgJapa = guideDevotees.length > 0 ? (totalJapa / guideDevotees.length).toFixed(1) : '0.0';
+
+  const sbAttendedCount = guideDevotees.filter((d) => d.pillar_dots?.bhagavatam === 'green').length;
+  const dynamicSbPct = guideDevotees.length > 0 ? Math.round((sbAttendedCount / guideDevotees.length) * 100) : 0;
+
+  const jfOnTimeCount = guideDevotees.filter((d) => d.pillar_dots?.jf === 'green').length;
+  const dynamicJfPct = guideDevotees.length > 0 ? Math.round((jfOnTimeCount / guideDevotees.length) * 100) : 0;
+
+  const totalReadingMins = guideDevotees.reduce((acc, d) => acc + (d.reading_mins || 0), 0);
+  const dynamicAvgReadingMins = guideDevotees.length > 0 ? Math.round(totalReadingMins / guideDevotees.length) : 0;
 
   const pendingApprovals = approvalRequests.filter((r) => r.status === 'pending');
 
@@ -218,7 +249,7 @@ export default function GuideDashboardView() {
       {/* Date & Mode Switcher */}
       <div className="flex items-center justify-between mb-3 px-1">
         <span className="text-xs font-bold text-[#786E65]">
-          Monitoring: 12 Folk Boys & Leads
+          Monitoring: {guideDevotees.length} {guideDevotees.length === 1 ? 'Folk Boy / Lead' : 'Folk Boys & Leads'}
         </span>
         <button
           type="button"
@@ -478,8 +509,7 @@ export default function GuideDashboardView() {
         </div>
       )}
 
-      {/* WEEK VIEW: WEEKLY AVERAGE OVERVIEW CARD
-          "In week view ...Guide should see the average view of week .. (as per heat map of the individual , we should take the average of every day and add it to show the weekly average of the every thing , mangala arti , japa everything)" */}
+      {/* WEEK VIEW: WEEKLY AVERAGE OVERVIEW CARD */}
       {filterPeriod === 'week' && (
         <div className="mb-4 p-4 rounded-[26px] bg-white border border-stone-200/80 shadow-xs space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
@@ -490,79 +520,78 @@ export default function GuideDashboardView() {
               </h3>
             </div>
             <span className="text-xs font-black text-[#216E39] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-              Avg 91.4 / 100 pts
+              Avg {dynamicAvgPoints} / 100 pts
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">Maṅgala Ārati</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">94% on-time</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicMangalaPct}% on-time</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">Japa Rounds</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">15.6 rds/day</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicAvgJapa} rds/day</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">SB Class</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">92% attended</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicSbPct}% attended</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">JF Slot</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">88% on-time</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicJfPct}% on-time</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">Daily Reading</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">28.5 mins</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicAvgReadingMins} mins</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">Batch Total</span>
-              <span className="text-xs font-extrabold text-[#216E39]">12 Boys Active</span>
+              <span className="text-xs font-extrabold text-[#216E39]">{guideDevotees.length} Active</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* MONTH VIEW: MONTHLY AVERAGE OVERVIEW CARD
-          "Same month should have average view !!" */}
+      {/* MONTH VIEW: MONTHLY AVERAGE OVERVIEW CARD */}
       {filterPeriod === 'month' && (
         <div className="mb-4 p-4 rounded-[26px] bg-white border border-stone-200/80 shadow-xs space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
             <div className="flex items-center gap-2">
               <CalendarIcon className="w-4 h-4 text-[#E07A2B]" />
               <h3 className="text-xs font-black text-[#1B1917] uppercase tracking-wider">
-                Monthly Average View (October 2026)
+                Monthly Average View
               </h3>
             </div>
             <span className="text-xs font-black text-[#216E39] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-              Avg 89.2 / 100 pts
+              Avg {dynamicAvgPoints} / 100 pts
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">Maṅgala Ārati</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">92% avg</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicMangalaPct}% avg</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">Japa Rounds</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">15.4 rds/day</span>
-            </div>
-            <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
-              <span className="text-[10px] text-[#786E65] font-semibold block">Sun Darshan</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">95% avg</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicAvgJapa} rds/day</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">SB Class</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">90% avg</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicSbPct}% avg</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
               <span className="text-[10px] text-[#786E65] font-semibold block">JF Slot</span>
-              <span className="text-xs font-extrabold text-[#1B1917]">88% avg</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicJfPct}% avg</span>
             </div>
             <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
-              <span className="text-[10px] text-[#786E65] font-semibold block">Reading Hours</span>
-              <span className="text-xs font-extrabold text-[#E07A2B]">14.2 hrs total</span>
+              <span className="text-[10px] text-[#786E65] font-semibold block">Daily Reading</span>
+              <span className="text-xs font-extrabold text-[#1B1917]">{dynamicAvgReadingMins} mins</span>
+            </div>
+            <div className="p-2 rounded-xl bg-stone-50 border border-stone-200/50">
+              <span className="text-[10px] text-[#786E65] font-semibold block">Total Devotees</span>
+              <span className="text-xs font-extrabold text-[#E07A2B]">{guideDevotees.length} Active</span>
             </div>
           </div>
         </div>
@@ -589,11 +618,7 @@ export default function GuideDashboardView() {
         {filteredDevotees.map((devotee) => {
           // Display points according to active filter
           const displayPoints =
-            filterPeriod === 'week'
-              ? Math.max(50, (devotee.last_points || 80) - (devotee.streak < 3 ? 15 : 2))
-              : filterPeriod === 'month'
-              ? Math.max(45, (devotee.last_points || 82) - (devotee.streak < 3 ? 20 : 4))
-              : activeDayView === 'today' && devotee.submitted
+            activeDayView === 'today' && devotee.submitted
               ? devotee.points_today
               : devotee.last_points || 0;
 
@@ -748,44 +773,71 @@ export default function GuideDashboardView() {
               </button>
             </div>
 
-            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
-              {guideDevotees.map((d) => {
-                const isSelected = d.id === selectedPersonalDevoteeId;
-                return (
-                  <button
-                    key={`personal-picker-${d.id}`}
-                    type="button"
-                    onClick={() => setSelectedPersonalDevoteeId(d.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-2xl border shrink-0 transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#1B1917] text-white border-stone-900 shadow-sm'
-                        : 'bg-white text-[#1B1917] border-stone-200 hover:border-amber-400'
-                    }`}
-                  >
-                    <div className="relative w-8 h-8 rounded-full overflow-hidden border border-amber-300 shrink-0">
-                      <img
-                        src={d.avatar_url || '/assets/images/Chanting.png'}
-                        alt={d.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="text-left">
-                      <span className="text-xs font-black block leading-tight">
-                        {d.name.split(' ')[0]}
-                      </span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[9px] font-mono ${isSelected ? 'text-amber-300' : 'text-[#786E65]'}`}>
-                          {d.folk_id}
-                        </span>
-                        <span className="text-[9px] font-extrabold text-[#E07A2B]">
-                          🔥 {d.streak}d
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+            {/* Search Folk Boys in Personal View */}
+            <div className="relative mb-2.5">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#8E867F]" />
+              <input
+                type="text"
+                value={personalSearchQuery}
+                onChange={(e) => setPersonalSearchQuery(e.target.value)}
+                placeholder="Search Folk Boy by name or FOLK ID..."
+                className="w-full h-8.5 pl-8.5 pr-8 text-xs rounded-xl bg-white border border-stone-200/80 focus:border-[#E07A2B] focus:ring-1 focus:ring-[#E07A2B]/20 outline-none text-[#1B1917] placeholder:text-[#A89E95]"
+              />
+              {personalSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setPersonalSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8E867F] hover:text-[#1B1917] cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
+
+            {personalFilteredDevotees.length === 0 ? (
+              <div className="py-3 text-center text-xs text-[#786E65]">
+                No Folk Boys found matching &quot;{personalSearchQuery}&quot;
+              </div>
+            ) : (
+              <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+                {personalFilteredDevotees.map((d) => {
+                  const isSelected = d.id === selectedPersonalDevoteeId;
+                  return (
+                    <button
+                      key={`personal-picker-${d.id}`}
+                      type="button"
+                      onClick={() => setSelectedPersonalDevoteeId(d.id)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-2xl border shrink-0 transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#1B1917] text-white border-stone-900 shadow-sm'
+                          : 'bg-white text-[#1B1917] border-stone-200 hover:border-amber-400'
+                      }`}
+                    >
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden border border-amber-300 shrink-0">
+                        <img
+                          src={d.avatar_url || '/assets/images/Chanting.png'}
+                          alt={d.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="text-left">
+                        <span className="text-xs font-black block leading-tight">
+                          {d.name.split(' ')[0]}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`text-[9px] font-mono ${isSelected ? 'text-amber-300' : 'text-[#786E65]'}`}>
+                            {d.folk_id}
+                          </span>
+                          <span className="text-[9px] font-extrabold text-[#E07A2B]">
+                            🔥 {d.streak}d
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Deep Personal Comparison & Verification Dossier */}

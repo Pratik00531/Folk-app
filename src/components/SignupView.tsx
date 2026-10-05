@@ -175,6 +175,17 @@ export default function SignupView() {
         localStorage.setItem(`folk_phone_map_${cleanPhone}`, userEmail);
         localStorage.setItem(`folk_phone_map_${cleanPhone.slice(-10)}`, userEmail);
         localStorage.setItem('folk_last_login_identifier', userEmail);
+
+        if (role === 'folk_guide') {
+          try {
+            const raw = localStorage.getItem('folk_registered_guides');
+            const list = raw ? JSON.parse(raw) : [];
+            if (!list.some((g: any) => g.name.toLowerCase() === fullName.trim().toLowerCase())) {
+              list.push({ id: crypto.randomUUID(), name: fullName.trim() });
+              localStorage.setItem('folk_registered_guides', JSON.stringify(list));
+            }
+          } catch {}
+        }
       }
 
       setScreen('home');

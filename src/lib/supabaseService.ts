@@ -514,25 +514,60 @@ export async function apiGetGuideDevotees(): Promise<{ data: any[]; error: any }
 // ==============================================================================
 
 export async function apiGetRegisteredGuides(): Promise<{
-  data: { id: string; name: string; spiritual_name?: string | null }[];
+  data: { id: string; name: string }[];
   error: any;
 }> {
-  if (!isSupabaseConfigured) return { data: [], error: null };
+  // 1. Gather any known/cached registered guides
+  let list: { id: string; name: string }[] = [];
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, full_name, spiritual_name')
-    .eq('role', 'folk_guide')
-    .order('full_name', { ascending: true });
+  // Seed known registered temple guide
+  const defaultGuides = [
+    { id: 'a953235f-5d8f-414d-a57f-4a3d2108fa0d', name: 'Amogh' },
+  ];
+  list.push(...defaultGuides);
 
-  if (error || !data) return { data: [], error };
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('folk_registered_guides');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (item?.name && !list.some((g) => g.name.toLowerCase() === item.name.toLowerCase())) {
+              list.push({ id: item.id || crypto.randomUUID(), name: item.name });
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Try fetching from Supabase profiles table (query only valid columns: id, full_name)
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('role', 'folk_guide')
+        .order('full_name', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        for (const g of data) {
+          if (g.full_name && !list.some((existing) => existing.name.toLowerCase() === g.full_name.toLowerCase())) {
+            list.push({ id: g.id, name: g.full_name });
+          }
+        }
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('folk_registered_guides', JSON.stringify(list));
+        }
+      }
+    } catch (err) {
+      console.warn('apiGetRegisteredGuides remote query notice:', err);
+    }
+  }
 
   return {
-    data: data.map((g) => ({
-      id: g.id,
-      name: g.spiritual_name ? `${g.full_name} (${g.spiritual_name})` : g.full_name,
-      spiritual_name: g.spiritual_name,
-    })),
+    data: list,
     error: null,
   };
 }
