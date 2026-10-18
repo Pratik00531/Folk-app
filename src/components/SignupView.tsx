@@ -184,6 +184,7 @@ export default function SignupView() {
               localStorage.setItem('folk_registered_guides', JSON.stringify(list));
             }
           } catch {}
+          apiGetRegisteredGuides();
         }
       }
 

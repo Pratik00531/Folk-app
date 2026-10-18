@@ -214,15 +214,13 @@ as $$
 $$;
 
 -- PROFILES POLICIES
-create policy "Users can view own profile"
+create policy "Users can view profiles in community"
   on public.profiles for select
   using (
     auth.uid() = id
-    or public.current_user_role() = 'folk_guide'
-    or (
-      public.current_user_role() = 'folk_lead'
-      and id in (select user_id from public.group_members where assigned_lead_id = auth.uid())
-    )
+    or role = 'folk_guide'
+    or auth.role() = 'authenticated'
+    or public.current_user_role() in ('folk_guide', 'folk_lead')
   );
 
 create policy "Users can update own personal info (excluding role)"

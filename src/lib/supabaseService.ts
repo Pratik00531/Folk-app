@@ -156,8 +156,8 @@ export async function apiGetProfile(userId: string) {
     .single();
 
   if (data) {
-    // If guide_id is set or guide_name is missing/null, attempt to resolve the guide's real name from profiles
-    if (data.guide_id && !data.guide_name) {
+    // If guide_id is set, always resolve the guide's latest real name from profiles
+    if (data.guide_id) {
       try {
         const { data: guideProfile } = await supabase
           .from('profiles')
@@ -661,26 +661,7 @@ export async function apiGetRegisteredGuides(): Promise<{
   data: { id: string; name: string }[];
   error: any;
 }> {
-  // 1. Gather any known/cached registered guides
-  let list: { id: string; name: string }[] = [];
-
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('folk_registered_guides');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          for (const item of parsed) {
-            if (item?.name && !list.some((g) => g.name.toLowerCase() === item.name.toLowerCase())) {
-              list.push({ id: item.id || crypto.randomUUID(), name: item.name });
-            }
-          }
-        }
-      }
-    } catch {}
-  }
-
-  // 2. Try fetching from Supabase profiles table (query only valid columns: id, full_name)
+  // 1. Fetch live guides from Supabase profiles table (authoritative source of truth)
   if (isSupabaseConfigured) {
     try {
       const { data, error } = await supabase
@@ -690,13 +671,17 @@ export async function apiGetRegisteredGuides(): Promise<{
         .order('full_name', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        for (const g of data) {
-          if (g.full_name && !list.some((existing) => existing.name.toLowerCase() === g.full_name.toLowerCase())) {
-            list.push({ id: g.id, name: g.full_name });
+        const liveList = data
+          .filter((g) => g.full_name && g.full_name.trim().length > 0)
+          .map((g) => ({ id: g.id, name: g.full_name.trim() }));
+
+        if (liveList.length > 0) {
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('folk_registered_guides', JSON.stringify(liveList));
+            } catch {}
           }
-        }
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('folk_registered_guides', JSON.stringify(list));
+          return { data: liveList, error: null };
         }
       }
     } catch (err) {
@@ -704,8 +689,30 @@ export async function apiGetRegisteredGuides(): Promise<{
     }
   }
 
+  // 2. Offline fallback: read from localStorage when network query is unavailable
+  let fallbackList: { id: string; name: string }[] = [];
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('folk_registered_guides');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          // Deduplicate by ID so an updated name doesn't leave stale duplicate entries
+          const map = new Map<string, string>();
+          for (const item of parsed) {
+            if (item?.name) {
+              const id = item.id || item.name;
+              map.set(id, item.name);
+            }
+          }
+          fallbackList = Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+        }
+      }
+    } catch {}
+  }
+
   return {
-    data: list,
+    data: fallbackList,
     error: null,
   };
 }

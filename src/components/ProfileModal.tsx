@@ -78,9 +78,18 @@ export default function ProfileModal() {
           .then(({ data }) => {
             if (data && data.length > 0) {
               setRegisteredGuides(data);
-              if (currentUser.guide_name) {
+              if (currentUser.guide_id) {
+                const match = data.find((g) => g.id === currentUser.guide_id);
+                if (match) {
+                  setSelectedGuideId(match.id);
+                  setSelectedGuideName(match.name);
+                }
+              } else if (currentUser.guide_name) {
                 const match = data.find((g) => g.name.toLowerCase() === currentUser.guide_name?.toLowerCase());
-                if (match) setSelectedGuideId(match.id);
+                if (match) {
+                  setSelectedGuideId(match.id);
+                  setSelectedGuideName(match.name);
+                }
               }
             } else {
               setRegisteredGuides([]);
@@ -214,6 +223,12 @@ export default function ProfileModal() {
       }
 
       setSaveSuccess(true);
+      if (currentUser.role === 'folk_guide') {
+        const newName = fullName.trim() || currentUser.full_name;
+        setRegisteredGuides((prev) =>
+          prev.map((g) => (g.id === currentUser.id ? { ...g, name: newName } : g))
+        );
+      }
       setTimeout(() => {
         setSaveSuccess(false);
         setIsProfileModalOpen(false);

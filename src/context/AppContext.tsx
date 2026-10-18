@@ -52,6 +52,7 @@ import {
   apiGetLatestReminderForDevotee,
   apiGetActivePointRules,
   apiSavePointRules,
+  apiGetRegisteredGuides,
 } from '@/lib/supabaseService';
 import { sendDeviceNotification } from '@/lib/notificationService';
 import { evaluateSadhanaRecord } from '@/lib/pointRuleEngine';
@@ -458,11 +459,104 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         .subscribe();
     }
 
+    // Realtime subscription for live profile updates (names, roles, avatars across devices)
+    let profilesChannel: any = null;
+    if (isSupabaseConfigured) {
+      profilesChannel = supabase
+        .channel('public:profiles_live_sync')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'profiles',
+          },
+          (payload) => {
+            const updatedProfile = payload.new as any;
+            if (!updatedProfile || !updatedProfile.id) return;
+
+            // 1. If updated profile is current user, update currentUser immediately
+            const cur = currentUserRef.current;
+            if (cur && (cur.id === updatedProfile.id || cur.email === updatedProfile.email)) {
+              const merged: UserProfile = {
+                ...cur,
+                full_name: updatedProfile.full_name || cur.full_name,
+                phone: updatedProfile.phone || cur.phone,
+                avatar_url: updatedProfile.avatar_url || cur.avatar_url,
+                role: updatedProfile.role || cur.role,
+                updated_at: updatedProfile.updated_at || new Date().toISOString(),
+              };
+              setCurrentUser(merged);
+              currentUserRef.current = merged;
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem('folk_user_profile', JSON.stringify(merged));
+                } catch {}
+              }
+            }
+
+            // 2. If it is a Folk Guide, update registered guides list and any devotees assigned to this guide
+            if (updatedProfile.role === 'folk_guide') {
+              if (currentUserRef.current?.guide_id === updatedProfile.id) {
+                setCurrentUser((prev) => ({
+                  ...prev,
+                  guide_name: updatedProfile.full_name,
+                }));
+              }
+              if (typeof window !== 'undefined') {
+                try {
+                  const raw = localStorage.getItem('folk_registered_guides');
+                  let list = raw ? JSON.parse(raw) : [];
+                  if (Array.isArray(list)) {
+                    let found = false;
+                    list = list.map((g: any) => {
+                      if (g.id === updatedProfile.id) {
+                        found = true;
+                        return { id: updatedProfile.id, name: updatedProfile.full_name };
+                      }
+                      return g;
+                    });
+                    if (!found && updatedProfile.full_name) {
+                      list.push({ id: updatedProfile.id, name: updatedProfile.full_name });
+                    }
+                    localStorage.setItem('folk_registered_guides', JSON.stringify(list));
+                  }
+                } catch {}
+              }
+            }
+
+            // 3. Update the devotee roster immediately for Guide and Lead views
+            setGuideDevotees((prev) =>
+              prev.map((d) =>
+                d.id === updatedProfile.id
+                  ? {
+                      ...d,
+                      name: updatedProfile.full_name || d.name,
+                      avatar_url: updatedProfile.avatar_url || d.avatar_url,
+                      role: updatedProfile.role === 'folk_lead' ? 'folk_lead' : 'folk_boy',
+                      folk_id: updatedProfile.folk_id || d.folk_id,
+                    }
+                  : d
+              )
+            );
+
+            // 4. Also refresh full guide devotees list in background to ensure all metrics sync
+            apiGetGuideDevotees().then(({ data: devs }) => {
+              if (devs && devs.length > 0) setGuideDevotees(devs);
+            });
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       sadhanaSub.unsubscribe();
       approvalSub.unsubscribe();
       if (reminderChannel) {
         supabase.removeChannel(reminderChannel);
+      }
+      if (profilesChannel) {
+        supabase.removeChannel(profilesChannel);
       }
     };
   }, []);
@@ -605,10 +699,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             localStorage.setItem(`folk_phone_map_${clean.slice(-10)}`, updatedUser.email);
           }
         }
+
+        // If a Folk Guide is updating their name, immediately update the cached registered guides list
+        if ((current.role === 'folk_guide' || updates.role === 'folk_guide') && (updates.full_name || current.full_name)) {
+          const newGuideName = (updates.full_name || current.full_name).trim();
+          const raw = localStorage.getItem('folk_registered_guides');
+          let list = raw ? JSON.parse(raw) : [];
+          if (Array.isArray(list)) {
+            let found = false;
+            list = list.map((g: any) => {
+              if (g.id === current.id || g.name.toLowerCase() === (current.full_name || '').toLowerCase()) {
+                found = true;
+                return { id: current.id, name: newGuideName };
+              }
+              return g;
+            });
+            if (!found) {
+              list.push({ id: current.id, name: newGuideName });
+            }
+            localStorage.setItem('folk_registered_guides', JSON.stringify(list));
+          }
+        }
       } catch (err) {
         console.warn('localStorage profile save notice:', err);
       }
     }
+
+    // Immediately update local devotee roster in state if this user is in the roster
+    setGuideDevotees((prev) =>
+      prev.map((d) =>
+        d.id === current.id || d.folk_id === current.folk_id
+          ? {
+              ...d,
+              name: updates.full_name || d.name,
+              avatar_url: updates.avatar_url || d.avatar_url,
+              role: updates.role === 'folk_lead' ? 'folk_lead' : d.role,
+              folk_id: updates.folk_id || d.folk_id,
+            }
+          : d
+      )
+    );
 
     let backendError: any = null;
     if (isSupabaseConfigured) {
@@ -622,6 +752,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           apiGetGuideDevotees().then(({ data: devs }) => {
             if (devs && devs.length > 0) setGuideDevotees(devs);
           });
+          // Refresh Registered Guides so guide dropdowns reflect the updated name
+          apiGetRegisteredGuides();
         }
       } catch (err) {
         console.warn('apiUpdateProfile unexpected error:', err);
