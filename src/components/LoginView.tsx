@@ -97,6 +97,31 @@ export default function LoginView() {
     return Object.keys(newErrors).length === 0;
   };
 
+  function isNetworkOrTimeoutError(error: any): boolean {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return true;
+    }
+    if (!error) return false;
+    const msg = (error.message || error.error_description || String(error)).toLowerCase();
+    const name = (error.name || '').toLowerCase();
+    return (
+      msg.includes('failed to fetch') ||
+      msg.includes('network') ||
+      msg.includes('connection') ||
+      msg.includes('timeout') ||
+      msg.includes('timed out') ||
+      msg.includes('offline') ||
+      msg.includes('load failed') ||
+      msg.includes('err_') ||
+      msg.includes('lookup') ||
+      msg.includes('no such host') ||
+      msg.includes('wsarecv') ||
+      msg.includes('aborted') ||
+      name.includes('abort') ||
+      error.status === 0
+    );
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -106,6 +131,14 @@ export default function LoginView() {
     }
 
     if (isLiveBackend) {
+      // 1. Check if device is offline before attempting
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setLoading(false);
+        setNoAccountFound(false);
+        setAuthError('You appear to be offline. Please check your internet connection (Wi-Fi or Mobile Data) and try again.');
+        return;
+      }
+
       setLoading(true);
       setAuthError(null);
       setNoAccountFound(false);
@@ -118,14 +151,24 @@ export default function LoginView() {
       const { error } = await signIn(sanitizedIdentifier, password);
       if (error) {
         setLoading(false);
-        setNoAccountFound(true);
+
+        // 2. Handle network disconnection / slow connection errors
+        if (isNetworkOrTimeoutError(error)) {
+          setNoAccountFound(false);
+          setAuthError('Network request timed out or internet is too slow. Please check your connectivity and tap Retry.');
+          return;
+        }
 
         const isUnconfirmed = error.message?.toLowerCase().includes('not confirmed');
         if (isUnconfirmed) {
+          setNoAccountFound(false);
           setAuthError('Email not confirmed. Please check your inbox for the confirmation email or disable "Confirm email" in Supabase settings.');
-        } else {
-          setAuthError(`No account found or incorrect password for "${sanitizedIdentifier}". First time logging in? Create your account below.`);
+          return;
         }
+
+        // 3. Genuine credential or user not found error
+        setNoAccountFound(true);
+        setAuthError(`No account found or incorrect password for "${sanitizedIdentifier}". First time logging in? Create your account below.`);
         return;
       }
       setLoading(false);
@@ -206,6 +249,15 @@ export default function LoginView() {
                 </button>
               );
             })()}
+            {!noAccountFound && (
+              <button
+                type="button"
+                onClick={handleLogin}
+                className="w-full h-10 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-[#8C460D] dark:text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+              >
+                <span>Tap to Retry Connection ⟳</span>
+              </button>
+            )}
           </div>
         )}
       </div>

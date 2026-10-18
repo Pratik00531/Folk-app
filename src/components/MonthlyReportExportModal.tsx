@@ -27,9 +27,10 @@ export default function MonthlyReportExportModal({ isOpen, onClose }: MonthlyRep
 
   // Monthly aggregated data for each devotee
   const devoteeMonthlyReport = guideDevotees.map((d) => {
-    // Generate realistic monthly averages based on their streak and record
-    const basePts = d.submitted ? d.points_today : (d.last_points || 82);
-    const avgPts = Math.min(100, Math.max(40, basePts > 0 ? basePts - (d.streak < 5 ? 12 : 3) : 68));
+    // Generate realistic monthly averages based on their streak and record (10-point scale)
+    const rawPts = d.submitted ? d.points_today : (d.last_points || 8);
+    const basePts = rawPts > 10 ? rawPts / 10 : rawPts;
+    const avgPts = Math.min(10, Math.max(0, Number((basePts > 0 ? basePts : 8).toFixed(1))));
     const mangalaPct = d.pillars.mangala ? 96 : 82;
     const japaRounds = d.japa_rounds > 0 ? d.japa_rounds : (d.streak > 10 ? 16 : 14);
     const darshanPct = 95;
@@ -56,9 +57,9 @@ export default function MonthlyReportExportModal({ isOpen, onClose }: MonthlyRep
 
   // Calculate Batch Total Averages
   const totalDevotees = devoteeMonthlyReport.length;
-  const batchAvgPts = Math.round(
+  const batchAvgPts = (
     devoteeMonthlyReport.reduce((acc, cur) => acc + cur.avgPts, 0) / totalDevotees
-  );
+  ).toFixed(1);
   const batchAvgMangala = Math.round(
     devoteeMonthlyReport.reduce((acc, cur) => acc + cur.mangalaPct, 0) / totalDevotees
   );
@@ -85,7 +86,7 @@ export default function MonthlyReportExportModal({ isOpen, onClose }: MonthlyRep
       'FOLK ID',
       'Role',
       'Streak (Days)',
-      'Avg Monthly Points (/100)',
+      'Avg Monthly Points (/10)',
       'Mangala Arati (%)',
       'Japa Avg Rounds',
       'Sunday Darshan (%)',

@@ -76,7 +76,7 @@ export default function SadhanaComparisonBarChart({
     const points: BarDataPoint[] = [];
     let prevAvg = 0;
     let currAvg = 0;
-    let computedMax = metric === 'points' ? 100 : metric === 'rounds' ? 16 : 60;
+    let computedMax = metric === 'points' ? 10 : metric === 'rounds' ? 16 : 60;
 
     // 1. WEEK TIMEFRAME: Monday to Sunday of the current week
     if (timeframe === 'week') {
@@ -271,8 +271,8 @@ export default function SadhanaComparisonBarChart({
       prevAvg = currAvg > 0 ? Math.round(currAvg * 0.9) : 0;
     }
 
-    // Ensure computedMax has a friendly ceiling
-    computedMax = Math.max(computedMax, metric === 'points' ? 100 : metric === 'rounds' ? 16 : 60);
+    // Ensure computedMax has a friendly ceiling (Max 10 for Points)
+    computedMax = Math.max(computedMax, metric === 'points' ? 10 : metric === 'rounds' ? 16 : 60);
 
     return {
       barPoints: points,
@@ -303,14 +303,22 @@ export default function SadhanaComparisonBarChart({
       ? 100
       : 0;
 
-  // Y-axis tick divisions (e.g. 100, 75, 50, 25, 0)
-  const yTicks = [
-    maxScale,
-    Math.round(maxScale * 0.75),
-    Math.round(maxScale * 0.5),
-    Math.round(maxScale * 0.25),
-    0,
-  ];
+  // Y-axis tick divisions (e.g. 10, 8, 6, 4, 2, 0 for points)
+  const yTicks = useMemo(() => {
+    if (metric === 'points' || maxScale <= 10) {
+      return [10, 8, 6, 4, 2, 0];
+    }
+    if (metric === 'rounds') {
+      return [16, 12, 8, 4, 0];
+    }
+    return [
+      maxScale,
+      Math.round(maxScale * 0.75),
+      Math.round(maxScale * 0.5),
+      Math.round(maxScale * 0.25),
+      0,
+    ];
+  }, [metric, maxScale]);
 
   return (
     <div className="space-y-3.5 select-none animate-fadeIn">
@@ -372,9 +380,9 @@ export default function SadhanaComparisonBarChart({
                   <span>+{deltaPct}% vs previous {timeframe}</span>
                 </span>
               ) : delta < 0 ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-800/60 shadow-2xs">
-                  <TrendingDown className="w-3 h-3 text-rose-600 dark:text-rose-400" />
-                  <span>{deltaPct}% vs previous {timeframe}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/60 shadow-2xs">
+                  <TrendingDown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                  <span>{Math.abs(deltaPct)}% variance vs previous {timeframe}</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 px-2.5 py-0.5 rounded-full border border-stone-200 dark:border-stone-700">

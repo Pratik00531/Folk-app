@@ -121,15 +121,16 @@ export default function SadhanaLogModal() {
   const [darshanAttended, setDarshanAttended] = useState<boolean>(false);
   const [darshanArati, setDarshanArati] = useState<string>('07:15 AM');
 
-  // 4. Śrīmad Bhāgavatam
+  // 4. Śrīmad Bhāgavatam (In Temple = 2 pts, Outside = 1 pt, Not heard = 0 pts)
   const [sbAttended, setSbAttended] = useState<boolean>(true);
-  const [sbClass, setSbClass] = useState<string>('07:30 AM');
+  const [sbClass, setSbClass] = useState<string>('In Temple (07:30 AM)');
+  const [sbLocation, setSbLocation] = useState<'in_temple' | 'outside_temple' | 'not_heard'>('in_temple');
 
   // 5. JF (Japa Finish)
   const [jfAttended, setJfAttended] = useState<boolean>(true);
   const [jfTime, setJfTime] = useState<string>('06:45 PM');
 
-  // 6. Book Reading
+  // 6. Book Reading (0 points, purely minutes logged)
   const [readingAttended, setReadingAttended] = useState<boolean>(true);
   const [readingMinutes, setReadingMinutes] = useState<number>(30);
   const [customReadingInput, setCustomReadingInput] = useState<string>('');
@@ -138,9 +139,9 @@ export default function SadhanaLogModal() {
   // 7. Remarks
   const [remarks, setRemarks] = useState<string>('');
 
-  // Submission Celebration State
+  // Submission Celebration State (Default Max 10 Points)
   const [isSubmittingSuccess, setIsSubmittingSuccess] = useState<boolean>(false);
-  const [submittedScore, setSubmittedScore] = useState<number>(100);
+  const [submittedScore, setSubmittedScore] = useState<number>(10);
 
   // Hydrate from existing or set defaults matching reference image
   useEffect(() => {
@@ -171,8 +172,14 @@ export default function SadhanaLogModal() {
       if (existingRecord.srimad_bhagavatam_time) {
         setSbAttended(true);
         setSbClass(existingRecord.srimad_bhagavatam_time);
+        if (existingRecord.srimad_bhagavatam_time.toLowerCase().includes('outside') || existingRecord.srimad_bhagavatam_time.toLowerCase().includes('home')) {
+          setSbLocation('outside_temple');
+        } else {
+          setSbLocation('in_temple');
+        }
       } else {
         setSbAttended(false);
+        setSbLocation('not_heard');
       }
 
       if (existingRecord.japa_finish_slot_time) {
@@ -195,15 +202,16 @@ export default function SadhanaLogModal() {
       setMangalaAttended(true);
       setMangalaArati('05:03 AM');
       setJapaAttended(true);
-      setJapaArrival('05:15 AM');
-      setJapaLeaving('06:45 AM');
-      setJapaRounds(8);
+      setJapaArrival('05:30 AM');
+      setJapaLeaving('07:30 AM');
+      setJapaRounds(16);
       setDarshanAttended(isSunday);
       setDarshanArati('07:15 AM');
       setSbAttended(true);
-      setSbClass('07:30 AM');
+      setSbClass('In Temple (07:30 AM)');
+      setSbLocation('in_temple');
       setJfAttended(true);
-      setJfTime('06:45 PM');
+      setJfTime('07:30 AM');
       setReadingAttended(true);
       setReadingMinutes(30);
       setRemarks('');
@@ -526,6 +534,54 @@ export default function SadhanaLogModal() {
                   </div>
                 </div>
 
+                {/* Morning Japa Timing Slots & Points (5:30-6:00=1pt, to 6:30=2pts, to 7:00=3pts, to 7:30=4pts) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#786E65]">
+                      Morning Japa Timing & Points
+                    </span>
+                    <span className="text-[10px] font-bold text-[#E07A2B]">Max 4 pts</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: '5:30 – 6:00', pts: '1 pt', rounds: 4, start: '05:30 AM', end: '06:00 AM' },
+                      { label: '5:30 – 6:30', pts: '2 pts', rounds: 8, start: '05:30 AM', end: '06:30 AM' },
+                      { label: '5:30 – 7:00', pts: '3 pts', rounds: 12, start: '05:30 AM', end: '07:00 AM' },
+                      { label: '5:30 – 7:30', pts: '4 pts', rounds: 16, start: '05:30 AM', end: '07:30 AM' },
+                    ].map((slot) => {
+                      const isSelected = japaLeaving === slot.end && japaRounds === slot.rounds;
+                      return (
+                        <button
+                          key={slot.label}
+                          type="button"
+                          onClick={() => {
+                            setJapaArrival(slot.start);
+                            setJapaLeaving(slot.end);
+                            setJapaRounds(slot.rounds);
+                            setJfTime(slot.end);
+                          }}
+                          className={`py-2 px-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center justify-between border ${
+                            isSelected
+                              ? 'bg-[#E07A2B] text-white border-[#E07A2B] shadow-xs'
+                              : 'bg-[#FAF7F2] border border-stone-200/70 text-[#1B1917] hover:bg-stone-100'
+                          }`}
+                        >
+                          <span>{slot.label}</span>
+                          <span
+                            className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                              isSelected
+                                ? 'bg-white/20 text-white'
+                                : 'bg-amber-100 text-[#9C4507]'
+                            }`}
+                          >
+                            {slot.pts}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Rounds Completed Pills */}
                 <div>
                   <span className="text-[11px] font-semibold text-[#786E65] block mb-1.5">
@@ -648,7 +704,7 @@ export default function SadhanaLogModal() {
             </div>
           </div>
 
-          {/* 4. Śrīmad Bhāgavatam */}
+          {/* 4. Śrīmad Bhāgavatam (In Temple: 2 pts, Outside: 1 pt, Not heard: 0 pts) */}
           <div className="bg-white/90 rounded-[26px] p-4 border border-stone-200/50 shadow-xs space-y-3 transition-all">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -658,44 +714,78 @@ export default function SadhanaLogModal() {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-[#1B1917]">Śrīmad Bhāgavatam</h3>
-                  <p className="text-[11px] text-[#786E65]">Morning class attendance</p>
+                  <p className="text-[11px] text-[#786E65]">Class attendance & points</p>
                 </div>
               </div>
 
-              {/* Status Circle */}
-              <button
-                type="button"
-                onClick={() => setSbAttended(!sbAttended)}
-                title={sbAttended ? 'Attended' : 'Mark as attended'}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${
-                  sbAttended
-                    ? 'bg-[#2E7D32] text-white shadow-2xs'
-                    : 'bg-stone-200 text-stone-400 hover:bg-stone-300'
-                }`}
-              >
-                {sbAttended ? <Check className="w-4.5 h-4.5 stroke-[2.8]" /> : <Minus className="w-4 h-4" />}
-              </button>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-[#9C4507] border border-amber-300">
+                Max 2 pts
+              </span>
             </div>
 
-            {/* Time Filling Below the text */}
+            {/* In Temple (2 pts) | Outside Temple (1 pt) | Not heard (0 pts) */}
             <div className="pt-1">
-              {sbAttended ? (
-                <TimePickerAMPM
-                  value={sbClass}
-                  onChange={setSbClass}
-                  onClear={() => setSbAttended(false)}
-                  className="w-full justify-between py-2"
-                />
-              ) : (
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => setSbAttended(true)}
-                  className="w-full py-2.5 rounded-full border border-dashed border-stone-300 text-stone-500 text-xs font-semibold hover:bg-stone-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                  onClick={() => {
+                    setSbLocation('in_temple');
+                    setSbAttended(true);
+                    setSbClass('In Temple (07:30 AM)');
+                  }}
+                  className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 border ${
+                    sbLocation === 'in_temple'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                      : 'bg-[#FAF7F2] border-stone-200/70 text-[#1B1917] hover:bg-stone-100'
+                  }`}
                 >
-                  <Plus className="w-3.5 h-3.5 text-[#DC6820]" />
-                  <span>Tap to mark attended & set class time</span>
+                  <span className="text-sm">🏛️</span>
+                  <span className="text-[11px] font-black">In Temple</span>
+                  <span className={`text-[10px] font-extrabold ${sbLocation === 'in_temple' ? 'text-white' : 'text-emerald-700'}`}>
+                    2 Points
+                  </span>
                 </button>
-              )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSbLocation('outside_temple');
+                    setSbAttended(true);
+                    setSbClass('Outside Temple (Online/Home)');
+                  }}
+                  className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 border ${
+                    sbLocation === 'outside_temple'
+                      ? 'bg-[#E07A2B] text-white border-[#E07A2B] shadow-xs'
+                      : 'bg-[#FAF7F2] border-stone-200/70 text-[#1B1917] hover:bg-stone-100'
+                  }`}
+                >
+                  <span className="text-sm">🏠</span>
+                  <span className="text-[11px] font-black">Outside</span>
+                  <span className={`text-[10px] font-extrabold ${sbLocation === 'outside_temple' ? 'text-white' : 'text-[#8C460D]'}`}>
+                    1 Point
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSbLocation('not_heard');
+                    setSbAttended(false);
+                    setSbClass('Not heard');
+                  }}
+                  className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center justify-center gap-1 border ${
+                    sbLocation === 'not_heard'
+                      ? 'bg-stone-700 text-white border-stone-700 shadow-xs'
+                      : 'bg-[#FAF7F2] border-stone-200/70 text-[#1B1917] hover:bg-stone-100'
+                  }`}
+                >
+                  <span className="text-sm">❌</span>
+                  <span className="text-[11px] font-black">Not heard</span>
+                  <span className={`text-[10px] font-extrabold ${sbLocation === 'not_heard' ? 'text-white' : 'text-stone-500'}`}>
+                    0 Points
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -760,7 +850,7 @@ export default function SadhanaLogModal() {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-[#1B1917]">Book Reading</h3>
-                  <p className="text-[11px] text-[#786E65]">Time spent reading spiritual books</p>
+                  <p className="text-[11px] text-[#786E65]">No points — tracked in minutes for monthly/weekly averages</p>
                 </div>
               </div>
 
@@ -1009,20 +1099,20 @@ export default function SadhanaLogModal() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-[#786E65]">Points Earned</span>
                     <span className="text-base font-black text-[#216E39]">
-                      {submittedScore} / 100 pts
+                      {submittedScore} / 10 pts
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-emerald-50/90 border border-emerald-200/60 flex items-center gap-3 text-left">
                     <div className="w-10 h-10 rounded-[8px] bg-[#216E39] border border-[#1B592E] flex items-center justify-center text-white font-black text-sm shrink-0 shadow-xs">
-                      {Math.min(10, Math.round(submittedScore / 10))}
+                      {submittedScore}
                     </div>
                     <div>
                       <div className="text-xs font-black text-[#216E39]">
                         GitHub Heatmap Updated ASAP!
                       </div>
                       <div className="text-[10px] text-[#59534E]">
-                        {Math.min(10, Math.round(submittedScore / 10))}/10 Daily Points · Darkest Forest Green Tile
+                        {submittedScore}/10 Daily Points · Sādhana Heatmap
                       </div>
                     </div>
                   </div>

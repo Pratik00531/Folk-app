@@ -322,7 +322,7 @@ export default function SadhanaCalendarView() {
                     : 'bg-[#DCFCE7] text-[#15803D]'
                 }`}
               >
-                {dayRecord.points_earned}/100 pts {dayRecord.is_late_submission ? '• Late Filled 🔵' : ''}
+                {dayRecord.points_earned > 10 ? Math.round(dayRecord.points_earned / 10) : dayRecord.points_earned}/10 pts {dayRecord.is_late_submission ? '• Late Filled 🔵' : ''}
               </span>
             ) : isSelectedDayFuture ? (
               <span className="inline-block px-3 py-1 rounded-full bg-stone-100 text-stone-400 font-bold text-xs">
@@ -335,7 +335,7 @@ export default function SadhanaCalendarView() {
               </span>
             ) : (
               <span className="inline-block px-3 py-1 rounded-full bg-[#FEE2E2] text-[#DC2626] font-extrabold text-xs">
-                0/100 pts
+                0/10 pts
               </span>
             )}
           </div>

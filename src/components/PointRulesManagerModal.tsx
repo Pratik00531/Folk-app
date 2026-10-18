@@ -22,49 +22,54 @@ export default function PointRulesManagerModal({ onClose }: { onClose: () => voi
     }, 800);
   };
 
-  // Editable fields for the selected rule
+  // Editable fields for the selected rule (Default max 10 points system)
   const [ontimeFrom, setOntimeFrom] = useState<string>('04:30 AM');
-  const [ontimeTo, setOntimeTo] = useState<string>('05:05 AM');
-  const [ontimePts, setOntimePts] = useState<number>(20);
+  const [ontimeTo, setOntimeTo] = useState<string>('05:04 AM');
+  const [ontimePts, setOntimePts] = useState<number>(4);
 
-  const [lateFrom, setLateFrom] = useState<string>('05:06 AM');
-  const [lateTo, setLateTo] = useState<string>('05:15 AM');
-  const [latePts, setLatePts] = useState<number>(14);
+  const [lateFrom, setLateFrom] = useState<string>('05:05 AM');
+  const [lateTo, setLateTo] = useState<string>('05:14 AM');
+  const [latePts, setLatePts] = useState<number>(2);
 
-  const [lastminFrom, setLastminFrom] = useState<string>('05:16 AM');
+  const [lastminFrom, setLastminFrom] = useState<string>('05:15 AM');
   const [lastminTo, setLastminTo] = useState<string>('05:30 AM');
-  const [lastminPts, setLastminPts] = useState<number>(8);
+  const [lastminPts, setLastminPts] = useState<number>(1);
 
   const startEdit = (rule: PointRuleConfig) => {
     setEditingRuleId(rule.id);
     setOntimeFrom(rule.ontime_from || (rule.ontime_cutoff ? rule.ontime_cutoff.split('–')[0]?.trim() : '04:30 AM'));
-    setOntimeTo(rule.ontime_to || (rule.ontime_cutoff ? rule.ontime_cutoff.split('–')[1]?.trim() : '05:05 AM'));
-    setOntimePts(rule.ontime_points ?? rule.points);
+    setOntimeTo(rule.ontime_to || (rule.ontime_cutoff ? rule.ontime_cutoff.split('–')[1]?.trim() : '05:04 AM'));
+    setOntimePts(Math.max(0, rule.ontime_points ?? rule.points ?? 4));
 
-    setLateFrom(rule.late_from || (rule.late_cutoff ? rule.late_cutoff.split('–')[0]?.trim() : '05:06 AM'));
-    setLateTo(rule.late_to || (rule.late_cutoff ? rule.late_cutoff.split('–')[1]?.trim() : '05:15 AM'));
-    setLatePts(rule.late_points ?? Math.round((rule.ontime_points ?? rule.points) * 0.7));
+    setLateFrom(rule.late_from || (rule.late_cutoff ? rule.late_cutoff.split('–')[0]?.trim() : '05:05 AM'));
+    setLateTo(rule.late_to || (rule.late_cutoff ? rule.late_cutoff.split('–')[1]?.trim() : '05:14 AM'));
+    setLatePts(Math.max(0, rule.late_points ?? 2));
 
-    setLastminFrom(rule.lastmin_from || (rule.lastmin_cutoff ? rule.lastmin_cutoff.split('–')[0]?.trim() : '05:16 AM'));
+    setLastminFrom(rule.lastmin_from || (rule.lastmin_cutoff ? rule.lastmin_cutoff.split('–')[0]?.trim() : '05:15 AM'));
     setLastminTo(rule.lastmin_to || (rule.lastmin_cutoff ? rule.lastmin_cutoff.split('–')[1]?.trim() : '05:30 AM'));
-    setLastminPts(rule.lastmin_points ?? Math.round((rule.ontime_points ?? rule.points) * 0.4));
+    setLastminPts(Math.max(0, rule.lastmin_points ?? 1));
   };
 
   const saveEdit = (ruleId: string) => {
+    const isBookReading = pointRules.find((r) => r.id === ruleId)?.activity === 'book_reading';
+    const safeOntime = isBookReading ? 0 : Math.max(0, Number(ontimePts) || 0);
+    const safeLate = isBookReading ? 0 : Math.max(0, Number(latePts) || 0);
+    const safeLastmin = isBookReading ? 0 : Math.max(0, Number(lastminPts) || 0);
+
     updatePointRule(ruleId, {
       ontime_from: ontimeFrom,
       ontime_to: ontimeTo,
-      ontime_points: Number(ontimePts),
+      ontime_points: safeOntime,
       ontime_cutoff: `${ontimeFrom} – ${ontimeTo}`,
       late_from: lateFrom,
       late_to: lateTo,
-      late_points: Number(latePts),
+      late_points: safeLate,
       late_cutoff: `${lateFrom} – ${lateTo}`,
       lastmin_from: lastminFrom,
       lastmin_to: lastminTo,
-      lastmin_points: Number(lastminPts),
+      lastmin_points: safeLastmin,
       lastmin_cutoff: `${lastminFrom} – ${lastminTo}`,
-      points: Number(ontimePts),
+      points: safeOntime,
     });
     setEditingRuleId(null);
   };
@@ -200,110 +205,121 @@ export default function PointRulesManagerModal({ onClose }: { onClose: () => voi
                     <div className="mt-3 pt-3 border-t border-stone-200 space-y-3 bg-[#FAF7F2] p-3.5 rounded-xl border border-stone-200/80">
                       <div className="text-[11px] font-bold text-[#8C460D] uppercase tracking-wider flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-[#DC6820]" />
-                        <span>Edit Time Ranges & Points</span>
+                        <span>Edit Time Ranges & Points (No Negative Points Allowed)</span>
                       </div>
 
-                      {/* 1. On-Time (Green) Range */}
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-[#15803D] flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                          On-Time Range (Green):
-                        </label>
-                        <div className="grid grid-cols-5 gap-1.5 items-center">
-                          <input
-                            type="text"
-                            value={ontimeFrom}
-                            onChange={(e) => setOntimeFrom(e.target.value)}
-                            placeholder="From"
-                            className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
-                          />
-                          <span className="text-center text-xs text-stone-400 font-bold">to</span>
-                          <input
-                            type="text"
-                            value={ontimeTo}
-                            onChange={(e) => setOntimeTo(e.target.value)}
-                            placeholder="To"
-                            className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
-                          />
+                      {rule.activity === 'book_reading' ? (
+                        <div className="p-3 rounded-xl bg-amber-100/60 border border-amber-300 text-xs text-[#8C460D]">
+                          <span className="font-bold">📖 Minutes Only:</span> Book reading awards 0 points. Minutes read are logged directly and aggregated for weekly & monthly progress reports.
                         </div>
-                        <div className="flex items-center justify-end gap-1.5 pt-0.5">
-                          <span className="text-[10px] text-stone-500 font-semibold">Points:</span>
-                          <input
-                            type="number"
-                            value={ontimePts}
-                            onChange={(e) => setOntimePts(Number(e.target.value))}
-                            className="w-16 px-2 py-0.5 bg-white border border-stone-300 rounded-lg text-xs font-black text-center text-[#15803D]"
-                          />
-                        </div>
-                      </div>
+                      ) : (
+                        <>
+                          {/* 1. On-Time (Green) Range */}
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[#15803D] flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+                              On-Time Range (Green):
+                            </label>
+                            <div className="grid grid-cols-5 gap-1.5 items-center">
+                              <input
+                                type="text"
+                                value={ontimeFrom}
+                                onChange={(e) => setOntimeFrom(e.target.value)}
+                                placeholder="From"
+                                className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
+                              />
+                              <span className="text-center text-xs text-stone-400 font-bold">to</span>
+                              <input
+                                type="text"
+                                value={ontimeTo}
+                                onChange={(e) => setOntimeTo(e.target.value)}
+                                placeholder="To"
+                                className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
+                              />
+                            </div>
+                            <div className="flex items-center justify-end gap-1.5 pt-0.5">
+                              <span className="text-[10px] text-stone-500 font-semibold">Points (min 0):</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={ontimePts}
+                                onChange={(e) => setOntimePts(Math.max(0, Number(e.target.value)))}
+                                className="w-16 px-2 py-0.5 bg-white border border-stone-300 rounded-lg text-xs font-black text-center text-[#15803D]"
+                              />
+                            </div>
+                          </div>
 
-                      {/* 2. Late (Light Green) Range */}
-                      <div className="space-y-1 pt-1 border-t border-stone-200/60">
-                        <label className="text-[10px] font-bold text-[#4D7C0F] flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-[#84CC16]" />
-                          Late Range (Light Green):
-                        </label>
-                        <div className="grid grid-cols-5 gap-1.5 items-center">
-                          <input
-                            type="text"
-                            value={lateFrom}
-                            onChange={(e) => setLateFrom(e.target.value)}
-                            placeholder="From"
-                            className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
-                          />
-                          <span className="text-center text-xs text-stone-400 font-bold">to</span>
-                          <input
-                            type="text"
-                            value={lateTo}
-                            onChange={(e) => setLateTo(e.target.value)}
-                            placeholder="To"
-                            className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
-                          />
-                        </div>
-                        <div className="flex items-center justify-end gap-1.5 pt-0.5">
-                          <span className="text-[10px] text-stone-500 font-semibold">Points:</span>
-                          <input
-                            type="number"
-                            value={latePts}
-                            onChange={(e) => setLatePts(Number(e.target.value))}
-                            className="w-16 px-2 py-0.5 bg-white border border-stone-300 rounded-lg text-xs font-black text-center text-[#4D7C0F]"
-                          />
-                        </div>
-                      </div>
+                          {/* 2. Late (Light Green) Range */}
+                          <div className="space-y-1 pt-1 border-t border-stone-200/60">
+                            <label className="text-[10px] font-bold text-[#4D7C0F] flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-[#84CC16]" />
+                              Late Range (Light Green):
+                            </label>
+                            <div className="grid grid-cols-5 gap-1.5 items-center">
+                              <input
+                                type="text"
+                                value={lateFrom}
+                                onChange={(e) => setLateFrom(e.target.value)}
+                                placeholder="From"
+                                className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
+                              />
+                              <span className="text-center text-xs text-stone-400 font-bold">to</span>
+                              <input
+                                type="text"
+                                value={lateTo}
+                                onChange={(e) => setLateTo(e.target.value)}
+                                placeholder="To"
+                                className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
+                              />
+                            </div>
+                            <div className="flex items-center justify-end gap-1.5 pt-0.5">
+                              <span className="text-[10px] text-stone-500 font-semibold">Points (min 0):</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={latePts}
+                                onChange={(e) => setLatePts(Math.max(0, Number(e.target.value)))}
+                                className="w-16 px-2 py-0.5 bg-white border border-stone-300 rounded-lg text-xs font-black text-center text-[#4D7C0F]"
+                              />
+                            </div>
+                          </div>
 
-                      {/* 3. Last Min (Yellow) Range */}
-                      <div className="space-y-1 pt-1 border-t border-stone-200/60">
-                        <label className="text-[10px] font-bold text-[#B45309] flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
-                          Last-Minute Range (Yellow):
-                        </label>
-                        <div className="grid grid-cols-5 gap-1.5 items-center">
-                          <input
-                            type="text"
-                            value={lastminFrom}
-                            onChange={(e) => setLastminFrom(e.target.value)}
-                            placeholder="From"
-                            className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
-                          />
-                          <span className="text-center text-xs text-stone-400 font-bold">to</span>
-                          <input
-                            type="text"
-                            value={lastminTo}
-                            onChange={(e) => setLastminTo(e.target.value)}
-                            placeholder="To"
-                            className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
-                          />
-                        </div>
-                        <div className="flex items-center justify-end gap-1.5 pt-0.5">
-                          <span className="text-[10px] text-stone-500 font-semibold">Points:</span>
-                          <input
-                            type="number"
-                            value={lastminPts}
-                            onChange={(e) => setLastminPts(Number(e.target.value))}
-                            className="w-16 px-2 py-0.5 bg-white border border-stone-300 rounded-lg text-xs font-black text-center text-[#B45309]"
-                          />
-                        </div>
-                      </div>
+                          {/* 3. Last Min (Yellow) Range */}
+                          <div className="space-y-1 pt-1 border-t border-stone-200/60">
+                            <label className="text-[10px] font-bold text-[#B45309] flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+                              Last-Minute Range (Yellow):
+                            </label>
+                            <div className="grid grid-cols-5 gap-1.5 items-center">
+                              <input
+                                type="text"
+                                value={lastminFrom}
+                                onChange={(e) => setLastminFrom(e.target.value)}
+                                placeholder="From"
+                                className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
+                              />
+                              <span className="text-center text-xs text-stone-400 font-bold">to</span>
+                              <input
+                                type="text"
+                                value={lastminTo}
+                                onChange={(e) => setLastminTo(e.target.value)}
+                                placeholder="To"
+                                className="col-span-2 px-2 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold text-center"
+                              />
+                            </div>
+                            <div className="flex items-center justify-end gap-1.5 pt-0.5">
+                              <span className="text-[10px] text-stone-500 font-semibold">Points (min 0):</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={lastminPts}
+                                onChange={(e) => setLastminPts(Math.max(0, Number(e.target.value)))}
+                                className="w-16 px-2 py-0.5 bg-white border border-stone-300 rounded-lg text-xs font-black text-center text-[#B45309]"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
 
                       {/* Actions */}
                       <div className="flex justify-end gap-2 pt-2">

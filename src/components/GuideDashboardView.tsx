@@ -66,9 +66,9 @@ function getDotTooltip(status: PillarDotStatus, pillarName: string) {
 
 function getPointsColorClass(points: number): string {
   if (points <= 0) return 'text-[#EF4444] dark:text-red-400'; // Red is especially for 0!
-  if (points >= 80) return 'text-[#16A34A] dark:text-emerald-400'; // More points -> Green
-  if (points >= 50) return 'text-[#65A30D] dark:text-lime-400'; // Mid-high -> Light Green
-  return 'text-[#D97706] dark:text-amber-400'; // Lesser goes to Yellow
+  if (points >= 8) return 'text-[#16A34A] dark:text-emerald-400'; // 8-10 points -> Green
+  if (points >= 5) return 'text-[#65A30D] dark:text-lime-400'; // 5-7 points -> Light Green
+  return 'text-[#D97706] dark:text-amber-400'; // 1-4 points -> Yellow
 }
 
 
@@ -556,7 +556,7 @@ export default function GuideDashboardView() {
               </h3>
             </div>
             <span className="text-xs font-black text-[#216E39] dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/60">
-              Avg {dynamicAvgPoints} / 100 pts
+              Avg {dynamicAvgPoints} / 10 pts
             </span>
           </div>
 
@@ -600,7 +600,7 @@ export default function GuideDashboardView() {
               </h3>
             </div>
             <span className="text-xs font-black text-[#216E39] dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/60">
-              Avg {dynamicAvgPoints} / 100 pts
+              Avg {dynamicAvgPoints} / 10 pts
             </span>
           </div>
 
@@ -700,11 +700,11 @@ export default function GuideDashboardView() {
                   <div className="mt-0.5">
                     {filterPeriod === 'week' ? (
                       <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800/60">
-                        Weekly Avg: {displayPoints}/100 pts
+                        Weekly Avg: {displayPoints}/10 pts
                       </span>
                     ) : filterPeriod === 'month' ? (
                       <span className="text-[9px] font-semibold text-[#8C460D] dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-200/60 dark:border-amber-800/60">
-                        Monthly Avg: {displayPoints}/100 pts
+                        Monthly Avg: {displayPoints}/10 pts
                       </span>
                     ) : activeDayView === 'today' && devotee.submitted ? (
                       <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200/60 dark:border-emerald-800/60">

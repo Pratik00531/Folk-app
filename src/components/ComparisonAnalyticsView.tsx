@@ -41,7 +41,7 @@ function ComparisonBadge({
         +{delta}{isPercentage ? '%' : unit ? ` ${unit}` : ''} ↗
       </span>
     );
-  } else if (isNegative) {
+  } else if (isNegative && unit !== 'pts') {
     return (
       <span className="text-xs font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 inline-flex items-center gap-0.5">
         {delta}{isPercentage ? '%' : unit ? ` ${unit}` : ''} ↘
@@ -140,19 +140,19 @@ export default function ComparisonAnalyticsView({
 
   const hasSubmissions = targetDevotee.last_points > 0 || targetDevotee.submitted;
 
-  // Dynamic comparison calculations based on real scores
-  const thisMonthPoints = targetDevotee.submitted
+  // Dynamic comparison calculations based on real scores (0 to 10 points max)
+  const rawPoints = targetDevotee.submitted
     ? targetDevotee.points_today
     : targetDevotee.last_points || 0;
+  const thisMonthPoints = Math.max(0, Math.min(10, rawPoints));
 
-  // Calculate baseline: if devotee has low streak, comparison can highlight decrease accurately
+  // Calculate baseline: strictly non-negative, max 10
   const lastMonthPointsBaseline = hasSubmissions
-    ? targetDevotee.streak >= 7
-      ? Math.max(0, thisMonthPoints - 10)
-      : Math.min(100, thisMonthPoints + 12)
+    ? Math.max(0, Math.min(10, targetDevotee.streak >= 7 ? Math.max(1, thisMonthPoints - 1) : Math.min(10, thisMonthPoints + 1)))
     : 0;
 
-  const pointsDelta = thisMonthPoints - lastMonthPointsBaseline;
+  // No minus points anywhere!
+  const pointsDelta = Math.max(0, thisMonthPoints - lastMonthPointsBaseline);
 
   // Mangala on-time comparison
   const thisMonthMangalaPct = targetDevotee.pillars?.mangala ? 95 : hasSubmissions ? 40 : 0;
@@ -234,7 +234,7 @@ export default function ComparisonAnalyticsView({
                 thisMonthPoints > 0 ? 'text-[#15803D]' : 'text-stone-400'
               }`}
             >
-              {thisMonthPoints > 0 ? `${thisMonthPoints}/100` : '--/100'}
+              {thisMonthPoints > 0 ? `${thisMonthPoints}/10` : '--/10'}
             </span>
           </div>
         </div>
@@ -461,17 +461,16 @@ export default function ComparisonAnalyticsView({
               </div>
               <div className="flex items-center justify-between text-[11px] text-[#786E65]">
                 <span>
-                  Previous Baseline: <strong className="text-[#1B1917]">{lastMonthPointsBaseline} pts</strong>
+                  Previous Baseline: <strong className="text-[#1B1917]">{lastMonthPointsBaseline}/10 pts</strong>
                 </span>
                 <span>
-                  Current: <strong className={pointsDelta < 0 ? 'text-rose-700' : 'text-[#15803D]'}>{thisMonthPoints} pts</strong>
+                  Current: <strong className="text-[#15803D]">{thisMonthPoints}/10 pts</strong>
                 </span>
               </div>
               <div className="w-full h-1.5 rounded-full bg-stone-100 mt-2 overflow-hidden flex">
-                <div className="h-full bg-stone-300" style={{ width: `${Math.min(100, lastMonthPointsBaseline)}%` }} />
                 <div
-                  className={`h-full ${pointsDelta < 0 ? 'bg-rose-500' : 'bg-[#15803D]'}`}
-                  style={{ width: `${Math.min(100, Math.abs(pointsDelta))}%` }}
+                  className="h-full bg-gradient-to-r from-amber-400 to-[#E07A2B]"
+                  style={{ width: `${Math.min(100, (thisMonthPoints / 10) * 100)}%` }}
                 />
               </div>
             </div>

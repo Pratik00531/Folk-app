@@ -144,7 +144,7 @@ export default function FolkBoyHomeView() {
         >
           <Calendar className="w-3.5 h-3.5 text-[#E07A2B]" />
           <span className="text-xs font-bold text-[#1B1917]">
-            {todayRecord ? `${todayRecord.points_earned}/100 pts` : todayDateFormatted}
+            {todayRecord ? `${todayRecord.points_earned}/10 pts` : todayDateFormatted}
           </span>
           <ChevronRight className="w-3 h-3 text-[#8E867F]" />
         </button>
@@ -396,7 +396,7 @@ export default function FolkBoyHomeView() {
                   Today&apos;s Sādhana
                 </h1>
                 <p className="text-xs text-[#786E65] font-semibold mt-0.5">
-                  {completedCount} of {totalPillars} completed · {todayRecord?.points_earned || 100}/100 pts
+                  {completedCount} of {totalPillars} completed · {todayRecord?.points_earned ?? 10}/10 pts
                 </p>
               </div>
 

@@ -94,10 +94,9 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
   const devoteeReport = useMemo(() => {
     return guideDevotees.map((d, index) => {
       const days = Number(dateRangeInfo.daysCount) || 7;
-      const basePts = d.submitted ? d.points_today : (d.last_points || 82);
-      
-      const streakBonus = Math.min(10, Math.floor(d.streak / 3));
-      const avgPts = Math.min(100, Math.max(50, basePts + streakBonus - (index % 2 === 0 ? 0 : 4)));
+      const rawPts = d.submitted ? d.points_today : (d.last_points || 8);
+      const basePts = rawPts > 10 ? rawPts / 10 : rawPts;
+      const avgPts = Math.min(10, Math.max(0, Number((basePts > 0 ? basePts : 8).toFixed(1))));
       const mangalaPct = Math.min(100, Math.max(65, (d.pillars.mangala ? 96 : 82) + (days > 14 ? -2 : 3)));
       const sbHearingMins = Math.round(Math.min(60, Math.max(25, 45 + (d.pillars.bhagavatam ? 10 : -10))));
       const darshanPct = 95;
@@ -127,8 +126,8 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
 
   // Batch Aggregates
   const totalDevotees = Math.max(1, devoteeReport.length);
-  const batchAvgPts = Math.round(
-    devoteeReport.reduce((acc, cur) => acc + (cur.avgPts || 0), 0) / totalDevotees
+  const batchAvgPts = Number(
+    (devoteeReport.reduce((acc, cur) => acc + (cur.avgPts || 0), 0) / totalDevotees).toFixed(1)
   );
   const batchAvgMangala = Math.round(
     devoteeReport.reduce((acc, cur) => acc + (cur.mangalaPct || 0), 0) / totalDevotees
@@ -187,7 +186,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
               <th>FOLK ID</th>
               <th>Role</th>
               <th>Streak</th>
-              <th>Avg Points (/100)</th>
+              <th>Avg Points (/10)</th>
               <th>Maṅgala Ārati (%)</th>
               <th>Śrīmad Bhāgavatam Hearing</th>
               <th>Sunday Darshan (%)</th>
@@ -204,7 +203,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                 <td class="text-center" style="font-family:monospace;">${r.folk_id}</td>
                 <td class="${r.role === 'Folk Lead' ? 'badge-lead' : 'text-center'}">${r.role}</td>
                 <td class="text-center">${r.streak} Days</td>
-                <td class="${r.avgPts >= 85 ? 'badge-green' : 'text-center'}">${r.avgPts}</td>
+                <td class="${r.avgPts >= 8 ? 'badge-green' : 'text-center'}">${r.avgPts}</td>
                 <td class="text-center">${r.mangalaPct}%</td>
                 <td class="text-center" style="font-weight:bold; color:#7C2D12;">${r.sbHearingMins} mins/day</td>
                 <td class="text-center">${r.darshanPct}%</td>
@@ -220,7 +219,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
               <td class="text-center">-</td>
               <td class="text-center">${totalDevotees} Devotees</td>
               <td class="text-center">-</td>
-              <td class="text-center badge-green">${batchAvgPts} / 100</td>
+              <td class="text-center badge-green">${batchAvgPts} / 10</td>
               <td class="text-center">${batchAvgMangala}%</td>
               <td class="text-center">${batchAvgSbHearing} mins/day</td>
               <td class="text-center">${batchAvgDarshan}%</td>
@@ -267,7 +266,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
         'FOLK ID',
         'Role',
         'Streak (Days)',
-        'Avg Points (/100)',
+        'Avg Points (/10)',
         'Mangala Arati (%)',
         'Srimad Bhagavatam Hearing (Mins/Day)',
         'Sunday Darshan (%)',
@@ -499,7 +498,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                 Batch Avg
               </span>
               <span className="text-base font-black text-[#15803D] dark:text-emerald-300">
-                {batchAvgPts}/100
+                {batchAvgPts}/10
               </span>
             </div>
 
@@ -596,7 +595,7 @@ export default function SadhanaReportExportModal({ isOpen, onClose }: SadhanaRep
                     <td className="py-2 px-2 text-center text-[10px]">-</td>
                     <td className="py-2 px-2 text-center">
                       <span className="px-2 py-0.5 rounded-full bg-emerald-200 dark:bg-emerald-800/80 text-emerald-900 dark:text-emerald-100 font-black text-[10px]">
-                        {batchAvgPts}/100
+                        {batchAvgPts}/10
                       </span>
                     </td>
                     <td className="py-2 px-2 text-center font-black">

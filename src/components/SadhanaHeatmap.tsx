@@ -19,10 +19,11 @@ export default function SadhanaHeatmap() {
   const [selectedMonthId, setSelectedMonthId] = useState<string>(currentMonthId);
   const [hoveredDay, setHoveredDay] = useState<{ dayNum: number; dateStr: string; pts10: number; points: number; monthName: string } | null>(null);
 
-  // Convert points earned (0-100) to GitHub 10-point scale (at most 10 points)
+  // Get points on 10-point scale (supporting both 10-point system and legacy scores)
   const getDayPoints10 = (pointsEarned: number) => {
     if (pointsEarned <= 0) return 0;
-    return Math.min(10, Math.round(pointsEarned / 10));
+    if (pointsEarned > 10) return Math.min(10, Math.round(pointsEarned / 10));
+    return Math.min(10, Math.round(pointsEarned));
   };
 
   const getGitHubLevelStyle = (pts10: number, isFuture: boolean, isLateFilled = false) => {

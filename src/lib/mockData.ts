@@ -91,47 +91,48 @@ export const initialReadingState: UserReadingState = {
   completed_books: [],
 };
 
-// Default baseline Point Rules (Guide can customize all cutoffs, windows, and points dynamically via Guide Point & Cutoff System)
+// Default baseline Point Rules (Max Point: 10)
+// Configured as default, Guide / Lead can customize cutoffs and points dynamically
 export const initialPointRules: PointRuleConfig[] = [
   {
     id: 'pr-01',
     activity: 'mangala_arati',
-    title: 'Maṅgala Ārati Attendance',
-    condition: 'Arrive before 05:05 AM for full points',
-    points: 20,
-    ontime_cutoff: '04:30 AM – 05:05 AM',
+    title: 'Maṅgala Ārati Timing (AM)',
+    condition: '4:30 – 5:04:59 (4 pts) | 5:05 – 5:14:59 (2 pts) | 5:15 – 5:30 (1 pt)',
+    points: 4,
+    ontime_cutoff: '04:30 AM – 05:04 AM',
     ontime_from: '04:30 AM',
-    ontime_to: '05:05 AM',
-    ontime_points: 20, // Green
-    late_cutoff: '05:06 AM – 05:15 AM',
-    late_from: '05:06 AM',
-    late_to: '05:15 AM',
-    late_points: 14, // Light Green (10-15m)
-    lastmin_cutoff: '05:16 AM – 05:30 AM',
-    lastmin_from: '05:16 AM',
+    ontime_to: '05:04 AM',
+    ontime_points: 4, // 4 points (Green)
+    late_cutoff: '05:05 AM – 05:14 AM',
+    late_from: '05:05 AM',
+    late_to: '05:14 AM',
+    late_points: 2, // 2 points (Light Green)
+    lastmin_cutoff: '05:15 AM – 05:30 AM',
+    lastmin_from: '05:15 AM',
     lastmin_to: '05:30 AM',
-    lastmin_points: 8, // Yellow (Last minutes)
+    lastmin_points: 1, // 1 point (Yellow)
     is_active: true,
     effective_date: '2026-01-01',
   },
   {
     id: 'pr-02',
     activity: 'japa',
-    title: 'Morning Japa in Temple Hall (16 Rounds)',
-    condition: '16 rounds chanted in temple hall presence',
-    points: 40,
-    ontime_cutoff: '16 rounds (Hall)',
-    ontime_from: '16 rounds',
-    ontime_to: '16 rounds in hall',
-    ontime_points: 40, // Green (35 on Sundays)
-    late_cutoff: '12 – 15 rounds',
-    late_from: '12 rounds',
-    late_to: '15 rounds',
-    late_points: 28, // Light Green
-    lastmin_cutoff: '8 – 11 rounds',
-    lastmin_from: '8 rounds',
-    lastmin_to: '11 rounds',
-    lastmin_points: 16, // Yellow
+    title: 'Morning Japa Slot Timing',
+    condition: '5:30–7:30 (4 pts) | 5:30–7:00 (3 pts) | 5:30–6:30 (2 pts) | 5:30–6:00 (1 pt)',
+    points: 4,
+    ontime_cutoff: '05:30 AM – 07:30 AM',
+    ontime_from: '05:30 AM',
+    ontime_to: '07:30 AM',
+    ontime_points: 4, // 4 points
+    late_cutoff: '05:30 AM – 07:00 AM',
+    late_from: '05:30 AM',
+    late_to: '07:00 AM',
+    late_points: 3, // 3 points
+    lastmin_cutoff: '05:30 AM – 06:30 AM',
+    lastmin_from: '05:30 AM',
+    lastmin_to: '06:30 AM',
+    lastmin_points: 2, // 2 points
     is_active: true,
     effective_date: '2026-01-01',
   },
@@ -139,83 +140,67 @@ export const initialPointRules: PointRuleConfig[] = [
     id: 'pr-03',
     activity: 'srimad_bhagavatam',
     title: 'Śrīmad Bhāgavatam Morning Class',
-    condition: 'Attended full class by 07:35 AM',
-    points: 20,
-    ontime_cutoff: '07:00 AM – 07:35 AM',
-    ontime_from: '07:00 AM',
-    ontime_to: '07:35 AM',
-    ontime_points: 20, // Green (15 on Sundays)
-    late_cutoff: '07:36 AM – 07:45 AM',
-    late_from: '07:36 AM',
-    late_to: '07:45 AM',
-    late_points: 14, // Light Green
-    lastmin_cutoff: '07:46 AM – 08:00 AM',
-    lastmin_from: '07:46 AM',
-    lastmin_to: '08:00 AM',
-    lastmin_points: 8, // Yellow
+    condition: 'In Temple (2 pts) | Outside Temple (1 pt) | Not heard (0 pts)',
+    points: 2,
+    ontime_cutoff: 'In Temple',
+    ontime_from: 'In Temple',
+    ontime_to: 'In Temple',
+    ontime_points: 2, // 2 points
+    late_cutoff: 'Outside Temple',
+    late_from: 'Outside Temple',
+    late_to: 'Outside Temple',
+    late_points: 1, // 1 point
+    lastmin_cutoff: 'Not heard',
+    lastmin_from: 'Not heard',
+    lastmin_to: 'Not heard',
+    lastmin_points: 0, // 0 points
     is_active: true,
     effective_date: '2026-01-01',
   },
   {
     id: 'pr-04',
-    activity: 'japa_finish',
-    title: 'JF (Japa Finish Slot)',
-    condition: 'Complete morning rounds by target finish time',
-    points: 10,
-    ontime_cutoff: '06:00 AM – 07:00 AM',
-    ontime_from: '06:00 AM',
-    ontime_to: '07:00 AM',
-    ontime_points: 10, // Green
-    late_cutoff: '07:01 AM – 07:15 AM',
-    late_from: '07:01 AM',
-    late_to: '07:15 AM',
-    late_points: 7, // Light Green
-    lastmin_cutoff: '07:16 AM – 07:30 AM',
-    lastmin_from: '07:16 AM',
-    lastmin_to: '07:30 AM',
-    lastmin_points: 4, // Yellow
+    activity: 'book_reading',
+    title: 'Daily Prabhupada Book Reading',
+    condition: 'No points — minutes tracked with weekly/monthly averages',
+    points: 0,
+    ontime_cutoff: 'Minutes logged (0 pts)',
+    ontime_from: '0 mins',
+    ontime_to: '60+ mins',
+    ontime_points: 0,
+    late_cutoff: 'Minutes logged (0 pts)',
+    late_from: '0 mins',
+    late_to: '30 mins',
+    late_points: 0,
+    lastmin_cutoff: 'Minutes logged (0 pts)',
+    lastmin_from: '0 mins',
+    lastmin_to: '15 mins',
+    lastmin_points: 0,
     is_active: true,
     effective_date: '2026-01-01',
   },
   {
     id: 'pr-05',
     activity: 'darshan_arati',
-    title: 'Darshan Ārati (Sundays Only)',
-    condition: 'Sunday deity darshan worship (Excluded on weekdays)',
-    points: 10,
+    title: 'Darshan Ārati (Sundays)',
+    condition: 'Sunday deity darshan worship (No points assigned)',
+    points: 0,
     ontime_cutoff: '07:00 AM – 07:30 AM',
     ontime_from: '07:00 AM',
     ontime_to: '07:30 AM',
-    ontime_points: 10, // Green on Sunday, 0 on weekdays
-    late_cutoff: '07:31 AM – 07:45 AM',
-    late_from: '07:31 AM',
-    late_to: '07:45 AM',
-    late_points: 7, // Light Green
-    lastmin_cutoff: '07:46 AM – 08:00 AM',
-    lastmin_from: '07:46 AM',
-    lastmin_to: '08:00 AM',
-    lastmin_points: 4, // Yellow
+    ontime_points: 0,
     is_active: true,
     effective_date: '2026-01-01',
   },
   {
     id: 'pr-06',
-    activity: 'book_reading',
-    title: 'Daily Prabhupada Book Reading',
-    condition: '30+ minutes daily reading of Srila Prabhupada books',
-    points: 10,
-    ontime_cutoff: '30+ mins',
-    ontime_from: '30 mins',
-    ontime_to: '60+ mins',
-    ontime_points: 10, // Green
-    late_cutoff: '15 – 29 mins',
-    late_from: '15 mins',
-    late_to: '29 mins',
-    late_points: 7, // Light Green
-    lastmin_cutoff: '5 – 14 mins',
-    lastmin_from: '5 mins',
-    lastmin_to: '14 mins',
-    lastmin_points: 4, // Yellow
+    activity: 'japa_finish',
+    title: 'JF (Japa Finish Slot)',
+    condition: 'Time tracking for completing morning japa rounds',
+    points: 0,
+    ontime_cutoff: '06:00 AM – 07:30 AM',
+    ontime_from: '06:00 AM',
+    ontime_to: '07:30 AM',
+    ontime_points: 0,
     is_active: true,
     effective_date: '2026-01-01',
   },
