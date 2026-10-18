@@ -128,6 +128,11 @@ interface AppContextType {
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: any }>;
   isExportModalOpen: boolean;
   setIsExportModalOpen: (open: boolean) => void;
+  isPointRulesConfigured: boolean;
+  setIsPointRulesConfigured: (configured: boolean) => void;
+  isRulesModalOpen: boolean;
+  setIsRulesModalOpen: (open: boolean) => void;
+  activatePointRules: (rules: PointRuleConfig[]) => Promise<{ error: any }>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -155,6 +160,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false);
+  const [isPointRulesConfigured, setIsPointRulesConfigured] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('folk_point_rules_configured') === 'true';
+    }
+    return false;
+  });
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState<boolean>(false);
 
   const currentUserRef = React.useRef(currentUser);
   useEffect(() => {
@@ -311,6 +323,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     // Load Guide Point Rules from Supabase or localStorage
     if (typeof window !== 'undefined') {
+      const isConfigured = localStorage.getItem('folk_point_rules_configured') === 'true';
+      setIsPointRulesConfigured(isConfigured);
       const local = localStorage.getItem('folk_point_rules');
       if (local) {
         try {
@@ -320,10 +334,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     }
     apiGetActivePointRules().then(({ data: remoteRules }) => {
-      if (remoteRules && remoteRules.length > 0) {
+      if (remoteRules && Array.isArray(remoteRules) && remoteRules.length > 0) {
         setPointRules(remoteRules);
+        setIsPointRulesConfigured(true);
         if (typeof window !== 'undefined') {
           localStorage.setItem('folk_point_rules', JSON.stringify(remoteRules));
+          localStorage.setItem('folk_point_rules_configured', 'true');
+        }
+      } else {
+        if (typeof window !== 'undefined') {
+          const isConfigured = localStorage.getItem('folk_point_rules_configured') === 'true';
+          setIsPointRulesConfigured(isConfigured);
         }
       }
     });
@@ -625,11 +646,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const openLogModal = () => {
+    if (!isPointRulesConfigured && currentUser.role === 'folk_boy') {
+      alert('Points System Not Configured: Your FOLK Guide or Lead must configure and activate the Sādhana points system before you can submit Sādhana.');
+      return;
+    }
     setSelectedDateForModal(todayStr);
     setIsLogModalOpen(true);
   };
 
   const openLogModalForDate = (date: string) => {
+    if (!isPointRulesConfigured && currentUser.role === 'folk_boy') {
+      alert('Points System Not Configured: Your FOLK Guide or Lead must configure and activate the Sādhana points system before you can submit Sādhana.');
+      return;
+    }
     setSelectedDateForModal(date);
     setIsLogModalOpen(true);
   };
@@ -645,6 +674,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     targetUserId?: string,
     targetFolkId?: string
   ) => {
+    if (!isPointRulesConfigured && currentUser.role === 'folk_boy') {
+      alert('Sādhana logging is locked until your FOLK Guide or Lead configures the points system.');
+      return;
+    }
     const effectiveUserId = targetUserId || currentUser.id;
     const effectiveFolkId = targetFolkId || currentUser.folk_id;
     const isSelf = effectiveUserId === currentUser.id;
@@ -870,6 +903,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const activatePointRules = async (rules: PointRuleConfig[]): Promise<{ error: any }> => {
+    setPointRules(rules);
+    setIsPointRulesConfigured(true);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('folk_point_rules', JSON.stringify(rules));
+        localStorage.setItem('folk_point_rules_configured', 'true');
+      } catch {}
+    }
+    const { error } = await apiSavePointRules(rules);
+    return { error };
+  };
+
   const updatePointRule = (ruleId: string, updates: Partial<PointRuleConfig> | number, newThreshold?: string) => {
     setPointRules((prev) => {
       const nextRules = prev.map((r) => {
@@ -880,8 +926,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return { ...r, ...updates, points: updates.points ?? updates.ontime_points ?? r.points };
       });
 
+      setIsPointRulesConfigured(true);
       if (typeof window !== 'undefined') {
         localStorage.setItem('folk_point_rules', JSON.stringify(nextRules));
+        localStorage.setItem('folk_point_rules_configured', 'true');
       }
       apiSavePointRules(nextRules).catch((err) => console.warn('apiSavePointRules error:', err));
 
@@ -1074,6 +1122,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         updateUserProfile,
         isExportModalOpen,
         setIsExportModalOpen,
+        isPointRulesConfigured,
+        setIsPointRulesConfigured,
+        isRulesModalOpen,
+        setIsRulesModalOpen,
+        activatePointRules,
       }}
     >
       {children}

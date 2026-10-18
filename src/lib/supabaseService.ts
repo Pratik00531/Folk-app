@@ -948,7 +948,8 @@ export async function apiGetActivePointRules(): Promise<{ data: PointRuleConfig[
 
     if (error || !data) return { data: null, error };
     const rawRules = data.rules;
-    if (Array.isArray(rawRules)) {
+    // Only genuine rules configured and activated by a guide/lead (version > 1 and array) are returned
+    if (Array.isArray(rawRules) && rawRules.length > 0 && (data.version > 1 || data.name?.includes('Guide'))) {
       return { data: rawRules as PointRuleConfig[], error: null };
     }
     return { data: null, error: null };

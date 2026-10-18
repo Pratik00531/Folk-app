@@ -38,6 +38,7 @@ export default function SadhanaCalendarView() {
     approvalRequests,
     setIsProfileModalOpen,
     todayStr,
+    isPointRulesConfigured,
   } = useApp();
 
   // Mobile/device date configuration linked with live Indian Standard Time (IST / Gujarat)
@@ -442,8 +443,17 @@ export default function SadhanaCalendarView() {
           </div>
         )}
 
-        {/* Action Button: Disabled for future dates, active for past/today */}
-        {isSelectedDayFuture ? (
+        {/* Action Button: Disabled if point rules pending or future dates, active for past/today */}
+        {!isPointRulesConfigured && currentUser.role === 'folk_boy' ? (
+          <button
+            type="button"
+            disabled
+            className="w-full h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[#9C4507] dark:text-amber-400 font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed"
+          >
+            <Lock className="w-4 h-4 text-[#E07A2B]" />
+            <span>Points System Pending Setup by Folk Guide / Lead</span>
+          </button>
+        ) : isSelectedDayFuture ? (
           <button
             type="button"
             disabled

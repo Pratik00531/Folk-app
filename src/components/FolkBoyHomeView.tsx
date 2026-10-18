@@ -21,9 +21,13 @@ import {
   User,
   CheckCircle2,
   X,
+  Sliders,
+  Lock,
 } from 'lucide-react';
 import SadhanaHeatmap from '@/components/SadhanaHeatmap';
 import ComparisonAnalyticsView from '@/components/ComparisonAnalyticsView';
+import SadhanaComparisonBarChart from '@/components/SadhanaComparisonBarChart';
+import PointRulesManagerModal from '@/components/PointRulesManagerModal';
 import SadhanaReportExportModal from '@/components/SadhanaReportExportModal';
 import { formatIndianDateShort, formatIndianDateLong, isSundayDate } from '@/lib/dateUtils';
 
@@ -45,6 +49,9 @@ export default function FolkBoyHomeView() {
     approvalRequests,
     approveSadhanaRequest,
     rejectSadhanaRequest,
+    isPointRulesConfigured,
+    isRulesModalOpen,
+    setIsRulesModalOpen,
   } = useApp();
 
   const [showComparison, setShowComparison] = useState(false);
@@ -115,6 +122,17 @@ export default function FolkBoyHomeView() {
               >
                 {currentUser.role === 'folk_lead' ? 'Folk Lead' : 'Folk Boy'}
               </span>
+              {currentUser.role === 'folk_lead' && (
+                <button
+                  type="button"
+                  onClick={() => setIsRulesModalOpen(true)}
+                  title="Configure Sādhana Points System"
+                  className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-[#8C460D] dark:text-amber-400 border border-amber-300/60 flex items-center gap-1 cursor-pointer transition-all"
+                >
+                  <Sliders className="w-2.5 h-2.5 text-[#E07A2B]" />
+                  <span>Point Rules</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -274,44 +292,96 @@ export default function FolkBoyHomeView() {
       </section>
 
       {/* 2. HERO SĀDHANA ACTION CARD
-          "For Filling sadhna it should be shown on Home page only as fill today's sadhna if remaining !!" */}
+          "Until unless Folk Lead Or Folk Guide Doesn't set the points system, Folk Boys should not be able to fill the sadhna." */}
       <section className="mb-4">
         {!todaySadhanaSubmitted ? (
-          /* UNFILLED STATE: Prominent "Fill Today's Sādhana" Hero Button */
-          <div className="glass-surface-elevated p-5 rounded-[28px] relative overflow-hidden shadow-lg border-2 border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-br from-amber-50/90 via-white to-orange-50/70 dark:from-[#26201B] dark:via-[#1E1916] dark:to-[#171412]">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-[#9C4507] text-[10px] font-extrabold uppercase tracking-wider mb-1">
-                  <Sparkles className="w-3 h-3 text-[#E07A2B]" />
-                  Remaining For Today
-                </span>
-                <h1 className="text-xl font-extrabold text-[#1B1917]">
-                  Today&apos;s Sādhana
-                </h1>
-                <p className="text-xs text-[#786E65] mt-0.5">
-                  {formatIndianDateLong(todayStr)} · Keep your streak burning!
-                </p>
+          !isPointRulesConfigured ? (
+            /* LOCKED STATE: Point rules have not been set by Guide or Lead */
+            <div className="glass-surface-elevated p-5 rounded-[28px] relative overflow-hidden shadow-md border-2 border-amber-300/70 dark:border-amber-700/60 bg-gradient-to-br from-amber-50/80 via-white to-orange-50/60 dark:from-[#26201B] dark:via-[#1E1916] dark:to-[#171412]">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-[#9C4507] dark:text-amber-400 text-[10px] font-extrabold uppercase tracking-wider mb-1 border border-amber-300 dark:border-amber-700/60">
+                    <Clock className="w-3 h-3 text-[#E07A2B]" />
+                    Points System Pending Setup
+                  </span>
+                  <h1 className="text-xl font-extrabold text-[#1B1917] dark:text-stone-100">
+                    Today&apos;s Sādhana
+                  </h1>
+                  <p className="text-xs text-[#786E65] dark:text-stone-400 mt-0.5">
+                    {formatIndianDateLong(todayStr)}
+                  </p>
+                </div>
+
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#E07A2B]">
+                  <Sliders className="w-6 h-6" />
+                </div>
               </div>
 
-              <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#E07A2B]">
-                <Flame className="w-6 h-6 animate-pulse" />
-              </div>
+              {currentUser.role === 'folk_lead' ? (
+                /* Folk Lead Action Button to configure & activate points */
+                <div className="space-y-3.5">
+                  <p className="text-xs text-[#59534E] dark:text-stone-300 leading-relaxed">
+                    Sādhana point rules have not been configured yet. As a <strong>Folk Lead</strong>, you can configure the point matrix now so devotees in your group can start logging Sādhana.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsRulesModalOpen(true)}
+                    className="w-full h-12 rounded-2xl saffron-gradient-btn font-extrabold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all"
+                  >
+                    <Sliders className="w-4 h-4 text-amber-200" />
+                    <span>Configure Points System (Lead Access) →</span>
+                  </button>
+                </div>
+              ) : (
+                /* Folk Boy Locked Notice */
+                <div className="space-y-3.5">
+                  <p className="text-xs text-[#59534E] dark:text-stone-300 leading-relaxed">
+                    Your FOLK Guide or Lead has not yet configured the daily Sādhana point system. Sādhana logging will open automatically once point rules are activated.
+                  </p>
+                  <div className="w-full h-12 rounded-2xl bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 font-extrabold text-xs text-stone-500 dark:text-stone-400 flex items-center justify-center gap-2 select-none">
+                    <Lock className="w-4 h-4 text-stone-400" />
+                    <span>Sādhana Logging Locked (Pending Guide Setup)</span>
+                  </div>
+                </div>
+              )}
             </div>
+          ) : (
+            /* UNFILLED STATE: Points system configured, prominent Fill Today button */
+            <div className="glass-surface-elevated p-5 rounded-[28px] relative overflow-hidden shadow-lg border-2 border-amber-300/80 dark:border-amber-700/60 bg-gradient-to-br from-amber-50/90 via-white to-orange-50/70 dark:from-[#26201B] dark:via-[#1E1916] dark:to-[#171412]">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-[#9C4507] text-[10px] font-extrabold uppercase tracking-wider mb-1">
+                    <Sparkles className="w-3 h-3 text-[#E07A2B]" />
+                    Remaining For Today
+                  </span>
+                  <h1 className="text-xl font-extrabold text-[#1B1917]">
+                    Today&apos;s Sādhana
+                  </h1>
+                  <p className="text-xs text-[#786E65] mt-0.5">
+                    {formatIndianDateLong(todayStr)} · Keep your streak burning!
+                  </p>
+                </div>
 
-            <p className="text-xs text-[#59534E] leading-relaxed mb-4">
-              You haven&apos;t recorded today&apos;s Sādhana yet. Please take 2 minutes to submit your Maṅgala, Japa, and Reading.
-            </p>
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#E07A2B]">
+                  <Flame className="w-6 h-6 animate-pulse" />
+                </div>
+              </div>
 
-            <button
-              type="button"
-              onClick={openLogModal}
-              className="w-full h-13 rounded-2xl saffron-gradient-btn font-extrabold text-sm shadow-xl flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all"
-            >
-              <Flame className="w-5 h-5 text-amber-200" />
-              <span>Fill Today&apos;s Sādhana</span>
-              <span className="text-xs opacity-90">→</span>
-            </button>
-          </div>
+              <p className="text-xs text-[#59534E] leading-relaxed mb-4">
+                You haven&apos;t recorded today&apos;s Sādhana yet. Please take 2 minutes to submit your Maṅgala, Japa, and Reading.
+              </p>
+
+              <button
+                type="button"
+                onClick={openLogModal}
+                className="w-full h-13 rounded-2xl saffron-gradient-btn font-extrabold text-sm shadow-xl flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] transition-all"
+              >
+                <Flame className="w-5 h-5 text-amber-200" />
+                <span>Fill Today&apos;s Sādhana</span>
+                <span className="text-xs opacity-90">→</span>
+              </button>
+            </div>
+          )
         ) : (
           /* COMPLETED STATE: Summary of Today's Completed Sādhana with Edit Action */
           <div className="glass-surface-elevated p-5 rounded-[28px] relative overflow-hidden shadow-md">
@@ -510,9 +580,11 @@ export default function FolkBoyHomeView() {
         <SadhanaHeatmap />
       </section>
 
-      {/* 4. MONTH-OVER-MONTH & WEEK-OVER-WEEK PROGRESS COMPARISON */}
-      {/* "A comparision view from the last month , that last month was this much and this month it is this month (progress and all) !!" */}
-      <section className="mb-4">
+      {/* 4. SĀDHANA COMPARISON (Day / Week / Month / Year Bar Chart)
+          "Sadhana presented in such a way that a person is able to compare himself to his previous day's / weekly Sadhana / Monthly .(Reference UI - change the colours and fonts as per our UI)" */}
+      <section className="mb-4 space-y-3">
+        <SadhanaComparisonBarChart />
+
         <div className="glass-surface p-4 rounded-[26px] border border-stone-200/80 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -521,10 +593,10 @@ export default function FolkBoyHomeView() {
               </div>
               <div>
                 <h3 className="text-xs font-black text-[#1B1917] uppercase tracking-wider">
-                  Month-over-Month Comparison
+                  Detailed Pillars & Radar Breakdown
                 </h3>
                 <span className="text-[11px] text-[#786E65]">
-                  October vs September · Japa, Maṅgala & Reading
+                  Pillar audit, reading milestones & mentor insights
                 </span>
               </div>
             </div>
@@ -662,6 +734,11 @@ export default function FolkBoyHomeView() {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
       />
+
+      {/* POINT RULES MANAGER MODAL (For Folk Leads and Folk Guides) */}
+      {isRulesModalOpen && (
+        <PointRulesManagerModal onClose={() => setIsRulesModalOpen(false)} />
+      )}
 
       {/* Floating Bottom Navigation Dock: STRICTLY 3 THINGS (Home, Calendar, Books)
           "Alignments of Taskbar (remove that AI type thing only 3 things there ,home , calendar , books)" */}

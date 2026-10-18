@@ -92,6 +92,8 @@ export default function SadhanaLogModal() {
     setActiveFolkBoyTab,
     todayStr,
     pointRules,
+    currentUser,
+    isPointRulesConfigured,
   } = useApp();
 
   const currentTodayStr = todayStr || getIndianTodayStr();
@@ -222,6 +224,33 @@ export default function SadhanaLogModal() {
   }, [isLogModalOpen, closeLogModal]);
 
   if (!isLogModalOpen) return null;
+
+  if (!isPointRulesConfigured && currentUser.role === 'folk_boy') {
+    return (
+      <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="w-full max-w-sm rounded-[32px] bg-white dark:bg-[#1E1916] p-6 shadow-2xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[#E07A2B] flex items-center justify-center mx-auto">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-base font-extrabold text-[#1B1917] dark:text-stone-100">
+              Points System Not Configured Yet
+            </h3>
+            <p className="text-xs text-[#786E65] dark:text-stone-300 leading-relaxed">
+              Your FOLK Guide or Lead has not yet configured the daily Sādhana points system. Sādhana logging will become available automatically once your Guide or Lead activates the point rules.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={closeLogModal}
+            className="w-full h-11 rounded-2xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-xs font-bold text-stone-700 dark:text-stone-200 transition-all cursor-pointer"
+          >
+            Understood
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Format date display: e.g. "Monday, 5 October 2026"
   const formattedSubtitle = formatIndianDateLong(selectedDateForModal);

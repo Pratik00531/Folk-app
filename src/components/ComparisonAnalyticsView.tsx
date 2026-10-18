@@ -16,6 +16,7 @@ import {
   Minus,
   AlertCircle,
 } from 'lucide-react';
+import SadhanaComparisonBarChart from '@/components/SadhanaComparisonBarChart';
 
 interface ComparisonAnalyticsViewProps {
   devotee?: GuideDevoteeOverview;
@@ -238,6 +239,12 @@ export default function ComparisonAnalyticsView({
           </div>
         </div>
       </div>
+
+      {/* Interactive Sādhana Comparison Bar Chart (Day / Week / Month / Year) */}
+      <SadhanaComparisonBarChart
+        customRecords={isSelfView || !devotee ? sadhanaRecords : undefined}
+        devoteeName={targetDevotee.name}
+      />
 
       {/* 1. CURRENT BOOK READING SPOTLIGHT */}
       <div className="glass-surface p-4 rounded-[26px] border border-stone-200/80 shadow-xs">

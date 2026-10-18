@@ -6,8 +6,21 @@ import { X, Check, Sliders, Shield, Clock, Star, ArrowRight, Save } from 'lucide
 import { PointRuleConfig } from '@/types/database';
 
 export default function PointRulesManagerModal({ onClose }: { onClose: () => void }) {
-  const { pointRules, updatePointRule } = useApp();
+  const { pointRules, updatePointRule, activatePointRules } = useApp();
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
+  const [appliedSuccess, setAppliedSuccess] = useState(false);
+
+  const handleApplyRules = async () => {
+    setIsApplying(true);
+    await activatePointRules(pointRules);
+    setIsApplying(false);
+    setAppliedSuccess(true);
+    setTimeout(() => {
+      setAppliedSuccess(false);
+      onClose();
+    }, 800);
+  };
 
   // Editable fields for the selected rule
   const [ontimeFrom, setOntimeFrom] = useState<string>('04:30 AM');
@@ -329,12 +342,32 @@ export default function PointRulesManagerModal({ onClose }: { onClose: () => voi
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-stone-200/50 bg-white/70 flex justify-end">
+        <div className="p-4 border-t border-stone-200/50 dark:border-stone-800 bg-white/80 dark:bg-stone-900/80 flex items-center justify-between">
+          <span className="text-[11px] text-[#786E65] dark:text-stone-400">
+            Applying activates Sādhana logging for all boys.
+          </span>
           <button
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-full bg-[#DC6820] hover:bg-[#C95B16] text-xs font-bold text-white shadow-xs cursor-pointer"
+            type="button"
+            disabled={isApplying}
+            onClick={handleApplyRules}
+            className="px-5 py-2.5 rounded-full saffron-gradient-btn text-xs font-black text-white shadow-md cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:opacity-50 transition-all"
           >
-            Apply Point Rules
+            {isApplying ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Activating...</span>
+              </>
+            ) : appliedSuccess ? (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                <span>Point Rules Activated!</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                <span>Apply & Activate Point Rules</span>
+              </>
+            )}
           </button>
         </div>
       </div>

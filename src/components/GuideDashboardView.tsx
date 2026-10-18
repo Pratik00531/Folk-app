@@ -84,6 +84,7 @@ export default function GuideDashboardView() {
     setIsProfileModalOpen,
     isExportModalOpen,
     setIsExportModalOpen,
+    isPointRulesConfigured,
   } = useApp();
 
   const [guideActiveTab, setGuideActiveTab] = useState<'roster' | 'personal'>('roster');
@@ -228,6 +229,32 @@ export default function GuideDashboardView() {
           </div>
         </div>
       </header>
+
+      {/* Point Rules Setup Required Banner for Guide */}
+      {!isPointRulesConfigured && (
+        <div className="mb-3.5 p-3.5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-[#8C460D] flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-[#E07A2B] flex items-center justify-center shrink-0">
+              <SlidersHorizontal className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-black text-[#1B1917] leading-tight">
+                Sādhana Points System Pending
+              </div>
+              <div className="text-[11px] text-[#786E65] mt-0.5">
+                Devotees cannot submit Sādhana until you configure and activate points.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsRulesModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl saffron-gradient-btn text-white text-xs font-extrabold shrink-0 shadow-xs cursor-pointer active:scale-95 transition-all"
+          >
+            Configure →
+          </button>
+        </div>
+      )}
 
       {/* TOP TASK BAR: Devotee Roster vs Personal View of Folk Boys */}
       {/* "This comparision view should be also shown on the guide view .. Where there would add another task bar for personal view of folk boys !! Every information .. Which book he is reading , managla arti coming or not , japa (everything) , to last month comparion , last week comparision and everything !!" */}
