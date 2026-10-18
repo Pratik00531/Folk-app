@@ -222,12 +222,12 @@ export default function SignupView() {
         <h1 className="text-2xl font-extrabold tracking-tight text-[#1B1917]">
           {step === 1 && 'Account Details'}
           {step === 2 && 'Security Credentials'}
-          {step === 3 && (role === 'folk_guide' ? 'Guide Authorization' : 'Select FOLK Guide')}
+          {step === 3 && (role === 'folk_guide' ? 'Guide Authorization' : 'Choose Your FOLK Guide')}
         </h1>
         <p className="text-xs text-[#6E665E] mt-0.5">
           {step === 1 && 'Enter your contact information'}
           {step === 2 && 'Create a secure password'}
-          {step === 3 && (role === 'folk_guide' ? 'Verify your Guide passcode' : 'Connect with your Guide')}
+          {step === 3 && (role === 'folk_guide' ? 'Verify your Guide passcode' : 'Choose your FOLK Guide and sign up')}
         </p>
 
         {authError && (
@@ -454,31 +454,26 @@ export default function SignupView() {
               // Devotee Guide Selection from Live Database
               <div className="space-y-2">
                 <label className="text-xs font-bold text-[#59534E] ml-1">
-                  Who is your FOLK Guide?
+                  Choose your FOLK Guide
                 </label>
 
                 {registeredGuides.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
-                        <Shield className="w-4 h-4 text-[#E07A2B]" />
-                      </div>
-                      <select
-                        value={selectedGuide}
-                        onChange={(e) => setSelectedGuide(e.target.value)}
-                        required
-                        className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#1B1917] outline-none shadow-xs cursor-pointer focus:ring-2 focus:ring-[#E07A2B]/15"
-                      >
-                        {registeredGuides.map((g) => (
-                          <option key={g.id} value={g.name}>
-                            {g.name}
-                          </option>
-                        ))}
-                      </select>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8E867F]">
+                      <Shield className="w-4 h-4 text-[#E07A2B]" />
                     </div>
-                    <p className="text-[10px] text-[#786E65] ml-1">
-                      Showing authorized temple guides registered in the database.
-                    </p>
+                    <select
+                      value={selectedGuide}
+                      onChange={(e) => setSelectedGuide(e.target.value)}
+                      required
+                      className="w-full h-12 pl-10 pr-4 rounded-2xl bg-white/90 border border-white text-sm font-semibold text-[#1B1917] outline-none shadow-xs cursor-pointer focus:ring-2 focus:ring-[#E07A2B]/15"
+                    >
+                      {registeredGuides.map((g) => (
+                        <option key={g.id} value={g.name}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 ) : (
                   <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 space-y-2">
@@ -511,7 +506,7 @@ export default function SignupView() {
               </>
             ) : (
               <>
-                <span>Complete Registration</span>
+                <span>Sign Up</span>
                 <CheckCircle2 className="w-4 h-4" />
               </>
             )}

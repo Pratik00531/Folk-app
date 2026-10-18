@@ -524,18 +524,8 @@ export default function ProfileModal() {
               </div>
             ) : (
               <div>
-                <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 flex items-center justify-between mb-1">
-                  <span>Assigned FOLK Guide</span>
-                  {selectedGuideName ? (
-                    <span className="text-[10px] font-bold text-[#216E39] dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      Active Guide
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded-full border border-stone-200 dark:border-stone-700">
-                      Not Assigned
-                    </span>
-                  )}
+                <label className="text-[11px] font-bold text-[#2C2825] dark:text-stone-300 block mb-1">
+                  FOLK Guide
                 </label>
                 <div className="relative">
                   <select
@@ -549,7 +539,7 @@ export default function ProfileModal() {
                     className="w-full h-10 px-3 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 text-xs font-bold text-[#1B1917] dark:text-stone-100 focus:border-[#E07A2B] outline-none cursor-pointer"
                   >
                     <option value="">
-                      {registeredGuides.length > 0 ? '-- Select Your Registered FOLK Guide --' : 'No Guides Registered Yet'}
+                      {registeredGuides.length > 0 ? '-- Select Your FOLK Guide --' : 'No Guides Registered Yet'}
                     </option>
                     {registeredGuides.map((g) => (
                       <option key={g.id} value={g.name}>
@@ -560,11 +550,11 @@ export default function ProfileModal() {
                 </div>
                 {selectedGuideName ? (
                   <span className="text-[10px] text-[#786E65] dark:text-stone-400 block mt-1">
-                    Assigned Temple Guide: <strong className="text-[#E07A2B] font-bold">{selectedGuideName}</strong> will monitor your daily Sādhana reports.
+                    Your Guide: <strong className="text-[#E07A2B] font-bold">{selectedGuideName}</strong>
                   </span>
                 ) : (
                   <span className="text-[10px] text-amber-700 dark:text-amber-400 block mt-1">
-                    Select your registered temple guide to link your Sādhana reporting.
+                    Select your FOLK Guide from the list.
                   </span>
                 )}
               </div>

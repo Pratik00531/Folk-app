@@ -247,16 +247,40 @@ export async function apiUpdateProfile(userId: string, updates: Partial<UserProf
   let dbResult: any = null;
   let dbError: any = null;
 
-  if (targetId) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(dbPayload)
-      .eq('id', targetId)
-      .select()
-      .single();
+  // Primary: Update via server API route using service role to bypass RLS recursion
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: targetId, updates }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          dbResult = json.data;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('API profile update notice, trying direct client:', apiErr);
+    }
+  }
 
-    dbResult = data;
-    dbError = error;
+  // Fallback: direct Supabase client call if API was unreachable
+  if (!dbResult && targetId) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(dbPayload)
+        .eq('id', targetId)
+        .select()
+        .single();
+
+      dbResult = data;
+      dbError = error;
+    } catch (directErr) {
+      dbError = directErr;
+    }
   }
 
   // 3. Update auth user metadata (stores chanting_commitment, college_or_profession, guide_name, etc.)

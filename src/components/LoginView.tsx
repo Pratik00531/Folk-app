@@ -14,7 +14,7 @@ import {
   KeyRound,
   UserPlus,
 } from 'lucide-react';
-import { apiGetRegisteredGuides, apiCheckAccountExists } from '@/lib/supabaseService';
+import { apiCheckAccountExists } from '@/lib/supabaseService';
 import ForgotPasswordModal from '@/components/ForgotPasswordModal';
 
 export default function LoginView() {
@@ -28,23 +28,6 @@ export default function LoginView() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [noAccountFound, setNoAccountFound] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-
-  // Active guides from Supabase
-  const [activeGuides, setActiveGuides] = useState<{ id: string; name: string }[]>([]);
-
-  useEffect(() => {
-    if (typeof apiGetRegisteredGuides === 'function') {
-      apiGetRegisteredGuides()
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setActiveGuides(data);
-          }
-        })
-        .catch((err) => {
-          console.warn('Could not load guides:', err);
-        });
-    }
-  }, []);
 
   const handleRoleSelect = (roleType: 'boy' | 'guide') => {
     setSelectedRoleType(roleType);
@@ -292,27 +275,6 @@ export default function LoginView() {
             <span>FOLK Guide</span>
           </button>
         </div>
-
-        {/* Dynamic Display of Active Registered Guides for Folk Boys */}
-        {selectedRoleType === 'boy' && activeGuides.length > 0 && (
-          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-[#7A4B1A] dark:text-amber-300">
-            <div className="flex items-center gap-1.5 font-bold text-[#8C460D] dark:text-amber-400 mb-1">
-              <Shield className="w-3.5 h-3.5 text-[#E07A2B]" />
-              <span>Active Temple Guides</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mt-1">
-              {activeGuides.map((g) => (
-                <span
-                  key={g.id}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/90 dark:bg-stone-800 text-[#1B1917] dark:text-stone-100 font-bold text-[11px] shadow-2xs border border-amber-200/60 dark:border-stone-700"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  {g.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Input: Mobile Number or Email */}
         <div className="space-y-1.5">
